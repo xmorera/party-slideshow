@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: flask-hello-world
+    name: app  # or whatever you want to call the service
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
