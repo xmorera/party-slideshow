@@ -22,13 +22,16 @@
             max-width: 100%;
             margin: 0 auto;
             padding: 20px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         .title {
             text-align: center;
             font-size: 4rem;
             font-weight: bold;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
             background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffeaa7);
             background-size: 300% 300%;
@@ -36,6 +39,7 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
             animation: gradient 3s ease infinite;
+            flex-shrink: 0;
         }
 
         @keyframes gradient {
@@ -46,12 +50,13 @@
 
         .main-image-container {
             width: 100%;
-            height: 70vh;
-            margin-bottom: 40px;
+            flex: 1;
+            margin-bottom: 20px;
             border-radius: 15px;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             position: relative;
+            min-height: 0;
         }
 
         .main-image {
@@ -73,12 +78,14 @@
             backdrop-filter: blur(10px);
             padding: 20px;
             box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            flex-shrink: 0;
+            height: 220px;
         }
 
         .carousel-title {
             text-align: center;
             font-size: 1.5rem;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             color: #fff;
         }
 
@@ -129,14 +136,16 @@
         @media (max-width: 768px) {
             .title {
                 font-size: 2.5rem;
+                margin-bottom: 15px;
             }
             
             .container {
                 padding: 10px;
             }
             
-            .main-image-container {
-                height: 60vh;
+            .carousel-container {
+                height: 180px;
+                padding: 15px;
             }
             
             .carousel-item {
@@ -148,10 +157,12 @@
         @media (max-width: 480px) {
             .title {
                 font-size: 2rem;
+                margin-bottom: 10px;
             }
             
-            .main-image-container {
-                height: 50vh;
+            .carousel-container {
+                height: 160px;
+                padding: 10px;
             }
             
             .carousel-item {
@@ -173,8 +184,8 @@
             </div>
         {% endif %}
 
-        {% if carousel_images %}
-            <div class="carousel-container">
+        <div class="carousel-container">
+            {% if carousel_images %}
                 <h2 class="carousel-title">More Memories</h2>
                 <div class="carousel">
                     {% for image in carousel_images %}
@@ -191,12 +202,13 @@
                         </div>
                     {% endfor %}
                 </div>
-            </div>
-        {% elif not main_image %}
-            <div class="no-images">
-                No images found in the gallery.
-            </div>
-        {% endif %}
+            {% else %}
+                <h2 class="carousel-title">No additional images</h2>
+                <div style="text-align: center; color: rgba(255,255,255,0.6); margin-top: 40px;">
+                    Add more images to see them here
+                </div>
+            {% endif %}
+        </div>
     </div>
 
     <script>
