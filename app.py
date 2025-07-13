@@ -7,29 +7,33 @@ IMAGE_FOLDER = os.path.join(os.path.dirname(__file__), 'images')
 ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
 
 def get_images():
-    if not os.path.exists(IMAGE_FOLDER):
-        return []
-
-    files = [
-        f for f in os.listdir(IMAGE_FOLDER)
-        if os.path.splitext(f)[1].lower() in ALLOWED_EXTENSIONS
-    ]
-
-    full_paths = [os.path.join(IMAGE_FOLDER, f) for f in files]
-    if not full_paths:
-        return []
-
-    # Sort by modification time, newest first
-    sorted_files = sorted(full_paths, key=os.path.getmtime, reverse=True)
+    # Return dummy list for testing deployment
+    return ['test-image1.jpg', 'test-image2.png', 'test-image3.jpeg']
     
-    if len(sorted_files) == 1:
-        return [os.path.basename(sorted_files[0])]
+    # Original code commented out for testing
+    # if not os.path.exists(IMAGE_FOLDER):
+    #     return []
 
-    latest = sorted_files[0]
-    rest = sorted_files[1:]
-    random.shuffle(rest)
+    # files = [
+    #     f for f in os.listdir(IMAGE_FOLDER)
+    #     if os.path.splitext(f)[1].lower() in ALLOWED_EXTENSIONS
+    # ]
 
-    return [os.path.basename(latest)] + [os.path.basename(r) for r in rest]
+    # full_paths = [os.path.join(IMAGE_FOLDER, f) for f in files]
+    # if not full_paths:
+    #     return []
+
+    # # Sort by modification time, newest first
+    # sorted_files = sorted(full_paths, key=os.path.getmtime, reverse=True)
+    
+    # if len(sorted_files) == 1:
+    #     return [os.path.basename(sorted_files[0])]
+
+    # latest = sorted_files[0]
+    # rest = sorted_files[1:]
+    # random.shuffle(rest)
+
+    # return [os.path.basename(latest)] + [os.path.basename(r) for r in rest]
 
 @app.route('/list-images')
 def list_images():
