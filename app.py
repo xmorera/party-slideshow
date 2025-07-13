@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template, send_from_directory
 import os
 import random
 
@@ -34,9 +34,22 @@ def get_images():
 @app.route('/')
 def main():
     images = get_images()
-    return '<br>'.join(images)
+    if not images:
+        return render_template('index.html', main_image=None, carousel_images=[])
+    
+    main_image = images[0]
+    carousel_images = images[1:] if len(images) > 1 else []
+    
+    return render_template('index.html', main_image=main_image, carousel_images=carousel_images)
+
+@app.route('/images/<filename>')
+def serve_image(filename):
+    return send_from_directory(IMAGE_FOLDER, filename)
 
 @app.route('/list-images')
 def list_images():
     images = get_images()
     return '<br>'.join(images)
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
