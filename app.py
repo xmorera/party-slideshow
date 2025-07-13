@@ -35,6 +35,11 @@ def get_images():
 
     # return [os.path.basename(latest)] + [os.path.basename(r) for r in rest]
 
+@app.route('/')
+def main():
+    images = get_images()
+    return '<br>'.join(images)
+
 @app.route('/list-images')
 def list_images():
     images = get_images()
