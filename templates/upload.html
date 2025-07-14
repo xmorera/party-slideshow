@@ -3,7 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload Photo - SFC 30</title>
+        .file-upload {
+            margin: 20px 0;
+        }
+
+        .upload-options {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .file-label {
+            padding: 12px 24px;
+            background: linear-gradient(45deg, #96ceb4, #ffeaa7);
+            color: #333;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(150, 206, 180, 0.4);
+            display: inline-block;
+            text-decoration: none;
+            min-width: 140px;
+            text-align: center;
+        }
+
+        .file-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(150, 206, 180, 0.6);
+        }
+
+        .camera-label {
+            background: linear-gradient(45deg, #ff6b6b, #ffa726);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .camera-label:hover {
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.6);
+        }ad Photo - SFC 30</title>
     <style>
         * {
             margin: 0;
@@ -226,6 +264,17 @@
                 width: 100%;
                 max-width: 200px;
             }
+            
+            .upload-options {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .file-label {
+                min-width: auto;
+                width: 100%;
+                max-width: 250px;
+            }
         }
     </style>
 </head>
@@ -270,10 +319,17 @@
 
             <!-- File upload option -->
             <div class="file-upload">
-                <label for="fileInput" class="file-label">
-                    📁 Or Choose from Gallery
-                </label>
-                <input type="file" id="fileInput" name="file" accept="image/*" capture="environment" class="file-input">
+                <div class="upload-options">
+                    <label for="galleryInput" class="file-label">
+                        📁 Choose from Gallery
+                    </label>
+                    <input type="file" id="galleryInput" name="file" accept="image/*" class="file-input">
+                    
+                    <label for="cameraInput" class="file-label camera-label">
+                        📸 Take Photo
+                    </label>
+                    <input type="file" id="cameraInput" name="file" accept="image/*" capture="environment" class="file-input">
+                </div>
             </div>
 
             <!-- Upload form -->
@@ -294,7 +350,8 @@
         const retakeBtn = document.getElementById('retakeBtn');
         const previewContainer = document.getElementById('previewContainer');
         const previewImage = document.getElementById('previewImage');
-        const fileInput = document.getElementById('fileInput');
+        const galleryInput = document.getElementById('galleryInput');
+        const cameraInput = document.getElementById('cameraInput');
         const uploadForm = document.getElementById('uploadForm');
         const hiddenFileInput = document.getElementById('hiddenFileInput');
 
@@ -361,8 +418,8 @@
             uploadForm.style.display = 'none';
         });
 
-        // File input handler
-        fileInput.addEventListener('change', (event) => {
+        // File input handler function
+        function handleFileInput(event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
@@ -389,7 +446,13 @@
                 };
                 reader.readAsDataURL(file);
             }
-        });
+        }
+
+        // Gallery input handler (no camera capture)
+        galleryInput.addEventListener('change', handleFileInput);
+        
+        // Camera input handler (with camera capture)
+        cameraInput.addEventListener('change', handleFileInput);
 
         // Cleanup on page unload
         window.addEventListener('beforeunload', () => {
