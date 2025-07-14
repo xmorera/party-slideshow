@@ -296,13 +296,6 @@
                                      alt="Carousel Image">
                             </div>
                         {% endfor %}
-                        <!-- Duplicate images for seamless loop -->
-                        {% for image in carousel_images %}
-                            <div class="carousel-item side-item">
-                                <img src="{{ url_for('serve_image', filename=image) }}" 
-                                     alt="Carousel Image">
-                            </div>
-                        {% endfor %}
                     </div>
                 {% else %}
                     <h2 class="carousel-title">No additional images</h2>
