@@ -104,17 +104,96 @@ def sync_dropbox_images():
                     existing_images.add(f)
         
         print(f"Found {len(existing_images)} existing local images: {list(existing_images)}")
-        print(f"Checking Dropbox folder: {DROPBOX_FOLDER}")
+        print(f"Checking Dropbox folder: '{DROPBOX_FOLDER}' (empty = root folder)")
         
-        # Get list of images from Dropbox
+        # First, let's list the root directory to see what's there
         try:
-            result = dbx.files_list_folder(DROPBOX_FOLDER)
-            dropbox_files = result.entries
+            print("=== Listing root directory structure ===")
+            result = dbx.files_list_folder('')
+            root_files = result.entries
             
-            # Handle pagination if there are many files
-            while result.has_more:
-                result = dbx.files_list_folder_continue(result.cursor)
-                dropbox_files.extend(result.entries)
+            for entry in root_files:
+                if hasattr(entry, 'name'):
+                    entry_type = "folder" if hasattr(entry, '.tag') and entry.tag == 'folder' else "file"
+                    print(f"Root entry: {entry.name} ({entry_type})")
+            
+            # Check different possible folder locations
+            folders_to_check = [
+                ('party-slideshow', '/party-slideshow'),
+                ('Apps', '/Apps'),
+                ('Apps/party-slideshow', '/Apps/party-slideshow')
+            ]
+            
+            dropbox_files = []
+            actual_folder_path = ''
+            
+            # Check if there's a party-slideshow subfolder
+            party_folder_exists = any(
+                hasattr(entry, 'name') and entry.name == 'party-slideshow' 
+                and hasattr(entry, '.tag') and entry.tag == 'folder'
+                for entry in root_files
+            )
+            
+            # Check if there's an Apps folder
+            apps_folder_exists = any(
+                hasattr(entry, 'name') and entry.name == 'Apps' 
+                and hasattr(entry, '.tag') and entry.tag == 'folder'
+                for entry in root_files
+            )
+            
+            if party_folder_exists:
+                print("Found 'party-slideshow' subfolder in root, checking inside...")
+                result = dbx.files_list_folder('/party-slideshow')
+                dropbox_files = result.entries
+                actual_folder_path = '/party-slideshow'
+                
+                # Handle pagination
+                while result.has_more:
+                    result = dbx.files_list_folder_continue(result.cursor)
+                    dropbox_files.extend(result.entries)
+                    
+            elif apps_folder_exists:
+                print("Found 'Apps' folder, checking for party-slideshow inside...")
+                try:
+                    result = dbx.files_list_folder('/Apps')
+                    apps_contents = result.entries
+                    
+                    for entry in apps_contents:
+                        if hasattr(entry, 'name'):
+                            print(f"Apps folder contains: {entry.name}")
+                    
+                    # Check if party-slideshow exists in Apps
+                    party_in_apps = any(
+                        hasattr(entry, 'name') and entry.name == 'party-slideshow'
+                        for entry in apps_contents
+                    )
+                    
+                    if party_in_apps:
+                        print("Found 'party-slideshow' in Apps folder!")
+                        result = dbx.files_list_folder('/Apps/party-slideshow')
+                        dropbox_files = result.entries
+                        actual_folder_path = '/Apps/party-slideshow'
+                        
+                        # Handle pagination
+                        while result.has_more:
+                            result = dbx.files_list_folder_continue(result.cursor)
+                            dropbox_files.extend(result.entries)
+                    else:
+                        print("No 'party-slideshow' found in Apps folder")
+                        dropbox_files = root_files
+                        actual_folder_path = ''
+                        
+                except Exception as e:
+                    print(f"Error checking Apps folder: {e}")
+                    dropbox_files = root_files
+                    actual_folder_path = ''
+                    
+            else:
+                print("No 'party-slideshow' or 'Apps' subfolder found, using root folder...")
+                dropbox_files = root_files
+                actual_folder_path = ''
+                
+            print(f"Using folder path: '{actual_folder_path}' (empty = root)")
                 
         except dropbox.exceptions.ApiError as e:
             print(f"ERROR: Failed to list Dropbox folder '{DROPBOX_FOLDER}': {e}")
@@ -145,8 +224,12 @@ def sync_dropbox_images():
                     if filename not in existing_images:
                         print(f"New image to download: {filename}")
                         try:
-                            # Download the file
-                            dropbox_path = f"{DROPBOX_FOLDER}/{filename}"
+                            # Download the file using the correct folder path
+                            if actual_folder_path:
+                                dropbox_path = f"{actual_folder_path}/{filename}"
+                            else:
+                                dropbox_path = f"/{filename}"
+                            
                             local_path = os.path.join(IMAGE_FOLDER, filename)
                             
                             print(f"Downloading: {dropbox_path} -> {local_path}")
