@@ -119,17 +119,17 @@ def sync_dropbox_images():
             
             # Check different possible folder locations
             folders_to_check = [
-                ('party-slideshow', '/party-slideshow'),
+                ('sfc30', '/sfc30'),
                 ('Apps', '/Apps'),
-                ('Apps/party-slideshow', '/Apps/party-slideshow')
+                ('Apps/sfc30', '/Apps/sfc30')
             ]
             
             dropbox_files = []
             actual_folder_path = ''
             
-            # Check if there's a party-slideshow subfolder
+            # Check if there's a sfc30 subfolder
             party_folder_exists = any(
-                hasattr(entry, 'name') and entry.name == 'party-slideshow' 
+                hasattr(entry, 'name') and entry.name == 'sfc30' 
                 and hasattr(entry, '.tag') and entry.tag == 'folder'
                 for entry in root_files
             )
@@ -142,10 +142,10 @@ def sync_dropbox_images():
             )
             
             if party_folder_exists:
-                print("Found 'party-slideshow' subfolder in root, checking inside...")
-                result = dbx.files_list_folder('/party-slideshow')
+                print("Found 'sfc30' subfolder in root, checking inside...")
+                result = dbx.files_list_folder('/sfc30')
                 dropbox_files = result.entries
-                actual_folder_path = '/party-slideshow'
+                actual_folder_path = '/sfc30'
                 
                 # Handle pagination
                 while result.has_more:
@@ -153,7 +153,7 @@ def sync_dropbox_images():
                     dropbox_files.extend(result.entries)
                     
             elif apps_folder_exists:
-                print("Found 'Apps' folder, checking for party-slideshow inside...")
+                print("Found 'Apps' folder, checking for sfc30 inside...")
                 try:
                     result = dbx.files_list_folder('/Apps')
                     apps_contents = result.entries
@@ -162,24 +162,24 @@ def sync_dropbox_images():
                         if hasattr(entry, 'name'):
                             print(f"Apps folder contains: {entry.name}")
                     
-                    # Check if party-slideshow exists in Apps
+                    # Check if sfc30 exists in Apps
                     party_in_apps = any(
-                        hasattr(entry, 'name') and entry.name == 'party-slideshow'
+                        hasattr(entry, 'name') and entry.name == 'sfc30'
                         for entry in apps_contents
                     )
                     
                     if party_in_apps:
-                        print("Found 'party-slideshow' in Apps folder!")
-                        result = dbx.files_list_folder('/Apps/party-slideshow')
+                        print("Found 'sfc30' in Apps folder!")
+                        result = dbx.files_list_folder('/Apps/sfc30')
                         dropbox_files = result.entries
-                        actual_folder_path = '/Apps/party-slideshow'
+                        actual_folder_path = '/Apps/sfc30'
                         
                         # Handle pagination
                         while result.has_more:
                             result = dbx.files_list_folder_continue(result.cursor)
                             dropbox_files.extend(result.entries)
                     else:
-                        print("No 'party-slideshow' found in Apps folder")
+                        print("No 'sfc30' found in Apps folder")
                         dropbox_files = root_files
                         actual_folder_path = ''
                         
@@ -189,7 +189,7 @@ def sync_dropbox_images():
                     actual_folder_path = ''
                     
             else:
-                print("No 'party-slideshow' or 'Apps' subfolder found, using root folder...")
+                print("No 'sfc30' or 'Apps' subfolder found, using root folder...")
                 dropbox_files = root_files
                 actual_folder_path = ''
                 
