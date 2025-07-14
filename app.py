@@ -25,7 +25,7 @@ MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
 # Dropbox configuration
 DROPBOX_APP_KEY = os.environ.get('APPKEY', 'your_new_app_key_here')
 DROPBOX_APP_SECRET = os.environ.get('APPSECRET', 'your_new_app_secret_here')
-DROPBOX_FOLDER = '/party-slideshow'
+DROPBOX_FOLDER = ''
 
 def get_dropbox_client():
     """Get authenticated Dropbox client"""
