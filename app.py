@@ -56,6 +56,14 @@ def main():
 def serve_image(filename):
     return send_from_directory(IMAGE_FOLDER, filename)
 
+@app.route('/api/images')
+def api_images():
+    images = get_images()
+    return jsonify({
+        'images': images,
+        'count': len(images)
+    })
+
 @app.route('/media/<filename>')
 def serve_media(filename):
     media_folder = os.path.join(os.path.dirname(__file__), 'media')

@@ -385,6 +385,85 @@
             // Initial setup
             setupCarouselImageClicks();
 
+            // Auto-refresh functionality
+            let currentImages = [];
+            
+            function fetchLatestImages() {
+                return fetch('/api/images')
+                    .then(response => response.json())
+                    .catch(error => {
+                        console.error('Error fetching images:', error);
+                        return null;
+                    });
+            }
+
+            function updateMainImage(newMainImage) {
+                const mainImageElement = document.querySelector('.main-image');
+                if (mainImageElement && newMainImage) {
+                    mainImageElement.style.opacity = '0.5';
+                    setTimeout(() => {
+                        mainImageElement.src = `/images/${newMainImage}`;
+                        mainImageElement.style.opacity = '1';
+                    }, 300);
+                }
+            }
+
+            function updateCarousel(newImages) {
+                if (!newImages || newImages.length <= 1) return;
+                
+                const carouselContainer = document.querySelector('.carousel');
+                if (!carouselContainer) return;
+                
+                // Clear existing carousel items
+                carouselContainer.innerHTML = '';
+                
+                // Add new carousel items (skip first image as it's the main image)
+                const carouselImages = newImages.slice(1);
+                carouselImages.forEach(image => {
+                    const carouselItem = document.createElement('div');
+                    carouselItem.className = window.innerWidth > 1200 ? 'carousel-item side-item' : 'carousel-item bottom-item';
+                    
+                    const img = document.createElement('img');
+                    img.src = `/images/${image}`;
+                    img.alt = 'Carousel Image';
+                    
+                    carouselItem.appendChild(img);
+                    carouselContainer.appendChild(carouselItem);
+                });
+                
+                // Re-setup click handlers for new images
+                setupCarouselImageClicks();
+            }
+
+            function refreshContent() {
+                fetchLatestImages().then(data => {
+                    if (data && data.images) {
+                        const newImages = data.images;
+                        
+                        // Update main image if there's a new one
+                        if (newImages.length > 0 && newImages[0] !== currentImages[0]) {
+                            updateMainImage(newImages[0]);
+                        }
+                        
+                        // Update carousel if images have changed
+                        if (JSON.stringify(newImages) !== JSON.stringify(currentImages)) {
+                            updateCarousel(newImages);
+                            currentImages = newImages;
+                        }
+                    }
+                });
+            }
+
+            // Initialize current images
+            fetchLatestImages().then(data => {
+                if (data && data.images) {
+                    currentImages = data.images;
+                }
+            });
+
+            // Auto-refresh every minute (60000 milliseconds)
+            setInterval(refreshContent, 60000);
+
             // Layout switching based on screen width
             function updateLayout() {
                 const carouselContainer = document.querySelector('.carousel-container');
