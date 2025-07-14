@@ -352,6 +352,40 @@
                 });
             }
 
+            // Click carousel images to load them as main image
+            function setupCarouselImageClicks() {
+                const carouselImages = document.querySelectorAll('.carousel-item img');
+                const mainImageElement = document.querySelector('.main-image');
+                
+                carouselImages.forEach(img => {
+                    img.addEventListener('click', function(e) {
+                        e.stopPropagation(); // Prevent event bubbling
+                        
+                        if (mainImageElement) {
+                            // Add a subtle transition effect
+                            mainImageElement.style.opacity = '0.5';
+                            
+                            setTimeout(() => {
+                                mainImageElement.src = this.src;
+                                mainImageElement.style.opacity = '1';
+                            }, 150);
+                        }
+                    });
+                    
+                    // Add visual feedback for clickable images
+                    img.style.cursor = 'pointer';
+                    img.addEventListener('mouseenter', function() {
+                        this.style.opacity = '0.8';
+                    });
+                    img.addEventListener('mouseleave', function() {
+                        this.style.opacity = '1';
+                    });
+                });
+            }
+
+            // Initial setup
+            setupCarouselImageClicks();
+
             // Layout switching based on screen width
             function updateLayout() {
                 const carouselContainer = document.querySelector('.carousel-container');
@@ -378,6 +412,9 @@
                     });
                     contentWrapper.style.flexDirection = 'column';
                 }
+                
+                // Re-setup carousel image clicks after layout change
+                setupCarouselImageClicks();
             }
 
             // Initial layout update
