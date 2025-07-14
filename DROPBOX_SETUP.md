@@ -1,29 +1,68 @@
 # Dropbox Integration Setup
 
-## Setting up Dropbox Access Token
+## Environment Variables Setup
 
-To sync images from your Dropbox app folder, you need to get an access token:
+The app uses these environment variables for Dropbox integration:
+- `APPKEY` - Your Dropbox app key
+- `APPSECRET` - Your Dropbox app secret  
+- `DROPBOX_ACCESS_TOKEN` - Your Dropbox access token
 
-1. **Run the token generation script:**
+## Local Development Setup
+
+### Option 1: Using .env file (Recommended)
+
+1. **Copy the example environment file:**
+   ```bash
+   copy .env.example .env
+   ```
+
+2. **Edit the .env file with your credentials:**
+   ```
+   APPKEY=<key>
+   APPSECRET=<secret>
+   DROPBOX_ACCESS_TOKEN=your_access_token_here
+   ```
+
+3. **Get your access token:**
+   ```bash
+   python get_dropbox_token.py
+   ```
+   Follow the OAuth flow and copy the token to your .env file.
+
+### Option 2: Using Windows environment variables
+
+Set environment variables in PowerShell:
+```powershell
+$env:APPKEY="hf4h0oogfmfd9xb"
+$env:APPSECRET="aiin4334ivtyz77"
+$env:DROPBOX_ACCESS_TOKEN="your_access_token_here"
+```
+
+## Render.com Deployment Setup
+
+1. **Go to your Render.com dashboard**
+2. **Navigate to your web service**
+3. **Go to Environment tab**
+4. **Add these environment variables:**
+
+   | Name | Value |
+   |------|-------|
+   | `APPKEY` | `key` |
+   | `APPSECRET` | `secret` |
+   | `DROPBOX_ACCESS_TOKEN` | `your_access_token_here` |
+
+5. **Save and redeploy your service**
+
+### Getting the Access Token for Production
+
+1. **Run locally first to get token:**
    ```bash
    python get_dropbox_token.py
    ```
 
-2. **Follow the OAuth flow:**
-   - The script will display a URL
-   - Open the URL in your browser
-   - Log in to Dropbox if needed
-   - Click "Allow" to grant access to your app
-   - Copy the authorization code that appears
+2. **Copy the generated token from `dropbox-token.txt`**
 
-3. **Enter the code:**
-   - Paste the authorization code into the terminal when prompted
-   - The script will save your access token to `dropbox-token.txt`
-
-4. **Test the sync:**
-   - Start your Flask app: `python app.py`
-   - Visit the main page - it will automatically try to sync on load
-   - Or click the "☁️ Sync" button to manually trigger sync
+3. **Add it to Render.com environment variables**
 
 ## How it works
 
@@ -44,6 +83,13 @@ Upload images to your Dropbox app folder, and they'll automatically sync to your
 
 ## Troubleshooting
 
-- If sync fails, check that your `dropbox-token.txt` file exists and contains a valid token
+- If sync fails, check that your environment variables are set correctly
 - Make sure your Dropbox app has the correct permissions
 - Check the console output for detailed error messages
+- On Render.com, check the logs for any authentication errors
+
+## Security Notes
+
+- Never commit your `.env` file to git (it's already in .gitignore)
+- Keep your access token secure
+- On Render.com, environment variables are encrypted and secure

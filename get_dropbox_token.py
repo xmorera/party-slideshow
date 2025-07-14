@@ -7,13 +7,30 @@ Run this once to get your access token, then save it to dropbox-token.txt
 import dropbox
 import os
 
-# Read app key and secret from dropbox-key.txt
+# Read app key and secret from environment variables or dropbox-key.txt
 def read_dropbox_credentials():
+    # First try environment variables
+    app_key = os.environ.get('APPKEY')
+    app_secret = os.environ.get('APPSECRET')
+    
+    if app_key and app_secret:
+        return app_key, app_secret
+    
+    # Fall back to reading from dropbox-key.txt
     try:
         with open('dropbox-key.txt', 'r') as f:
             lines = f.read().strip().split('\n')
-            app_key = lines[1].strip()
-            app_secret = lines[3].strip()
+            # Support both formats:
+            # Format 1: "App key\nhf4h0oogfmfd9xb\nApp secret\naiin4334ivtyz77"
+            # Format 2: "Appkey=hf4h0oogfmfd9xb\nAppsecret=aiin4334ivtyz77"
+            if '=' in lines[0]:
+                # Format 2
+                app_key = lines[0].split('=')[1].strip()
+                app_secret = lines[1].split('=')[1].strip()
+            else:
+                # Format 1
+                app_key = lines[1].strip()
+                app_secret = lines[3].strip()
             return app_key, app_secret
     except Exception as e:
         print(f"Error reading dropbox-key.txt: {e}")

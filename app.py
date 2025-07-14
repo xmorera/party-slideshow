@@ -7,6 +7,14 @@ from datetime import datetime
 import dropbox
 import time
 
+# Load environment variables from .env file if it exists
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # python-dotenv not installed, that's okay
+    pass
+
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'  # Change this to a random secret key
 IMAGE_FOLDER = os.path.join(os.path.dirname(__file__), 'images')
@@ -15,8 +23,8 @@ UPLOAD_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
 MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
 
 # Dropbox configuration
-DROPBOX_APP_KEY = 'hf4h0oogfmfd9xb'
-DROPBOX_APP_SECRET = 'aiin4334ivtyz77'
+DROPBOX_APP_KEY = os.environ.get('APPKEY', 'your_new_app_key_here')
+DROPBOX_APP_SECRET = os.environ.get('APPSECRET', 'your_new_app_secret_here')
 DROPBOX_FOLDER = '/party-slideshow'
 
 def get_dropbox_client():
