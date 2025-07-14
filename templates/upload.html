@@ -3,45 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        .file-upload {
-            margin: 20px 0;
-        }
-
-        .upload-options {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .file-label {
-            padding: 12px 24px;
-            background: linear-gradient(45deg, #96ceb4, #ffeaa7);
-            color: #333;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(150, 206, 180, 0.4);
-            display: inline-block;
-            text-decoration: none;
-            min-width: 140px;
-            text-align: center;
-        }
-
-        .file-label:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(150, 206, 180, 0.6);
-        }
-
-        .camera-label {
-            background: linear-gradient(45deg, #ff6b6b, #ffa726);
-            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
-        }
-
-        .camera-label:hover {
-            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.6);
-        }ad Photo - SFC 30</title>
+    <title>Upload Photo - SFC 30</title>
     <style>
         * {
             margin: 0;
@@ -178,6 +140,13 @@
             margin: 20px 0;
         }
 
+        .upload-options {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
         .file-input {
             display: none;
         }
@@ -192,11 +161,22 @@
             font-weight: bold;
             transition: all 0.3s ease;
             box-shadow: 0 5px 15px rgba(150, 206, 180, 0.4);
+            min-width: 140px;
+            text-align: center;
         }
 
         .file-label:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(150, 206, 180, 0.6);
+        }
+
+        .camera-label {
+            background: linear-gradient(45deg, #ff6b6b, #ffa726);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .camera-label:hover {
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.6);
         }
 
         .preview-container {
@@ -267,10 +247,11 @@
             
             .upload-options {
                 flex-direction: column;
+                align-items: center;
                 gap: 10px;
             }
             
-            .file-label {
+            .file-label, .camera-label {
                 min-width: auto;
                 width: 100%;
                 max-width: 250px;
