@@ -268,7 +268,7 @@
 <body>
     <div class="container">
         <div class="title">
-            <img src="/media/sfclogo.jpeg" 
+            <img src="{{ url_for('serve_media', filename='sfclogo.jpeg') }}" 
                  alt="SFC Logo" 
                  class="logo">
             <a href="{{ url_for('upload_page') }}" class="upload-btn">📸 Add Photo</a>

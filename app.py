@@ -56,6 +56,11 @@ def main():
 def serve_image(filename):
     return send_from_directory(IMAGE_FOLDER, filename)
 
+@app.route('/media/<filename>')
+def serve_media(filename):
+    media_folder = os.path.join(os.path.dirname(__file__), 'media')
+    return send_from_directory(media_folder, filename)
+
 @app.route('/list-images')
 def list_images():
     images = get_images()
