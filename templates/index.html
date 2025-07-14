@@ -13,7 +13,7 @@
 
         body {
             font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #1a237e;
             min-height: 100vh;
             color: white;
         }
@@ -29,18 +29,19 @@
 
         .title {
             text-align: center;
-            font-size: 4rem;
-            font-weight: bold;
             margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffeaa7);
-            background-size: 300% 300%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: gradient 3s ease infinite;
             flex-shrink: 0;
             position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logo {
+            height: 120px;
+            width: auto;
+            max-width: 100%;
+            object-fit: contain;
         }
 
         .upload-btn {
@@ -64,12 +65,6 @@
             box-shadow: 0 8px 25px rgba(78, 205, 196, 0.6);
             color: white;
             text-decoration: none;
-        }
-
-        @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
         }
 
         .content-wrapper {
@@ -218,9 +213,8 @@
         }
 
         @media (max-width: 768px) {
-            .title {
-                font-size: 2.5rem;
-                margin-bottom: 15px;
+            .logo {
+                height: 80px;
             }
             
             .upload-btn {
@@ -250,9 +244,8 @@
         }
 
         @media (max-width: 480px) {
-            .title {
-                font-size: 2rem;
-                margin-bottom: 10px;
+            .logo {
+                height: 60px;
             }
             
             .upload-btn {
@@ -274,10 +267,12 @@
 </head>
 <body>
     <div class="container">
-        <h1 class="title">
-            SFC 30
+        <div class="title">
+            <img src="/media/sfclogo.jpeg" 
+                 alt="SFC Logo" 
+                 class="logo">
             <a href="{{ url_for('upload_page') }}" class="upload-btn">📸 Add Photo</a>
-        </h1>
+        </div>
         
         <div class="content-wrapper">
             {% if main_image %}
