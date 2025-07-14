@@ -110,6 +110,7 @@
             height: 100%;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
 
         .carousel-container.bottom-layout {
@@ -136,8 +137,9 @@
             flex-direction: column;
             flex-wrap: wrap;
             height: 100%;
-            width: calc(200% + 15px);
+            width: 100%;
             animation: scrollVertical 30s linear infinite;
+            align-content: flex-start;
         }
 
         .carousel.bottom-carousel {
@@ -157,9 +159,10 @@
         }
 
         .carousel-item.side-item {
-            width: 150px;
+            width: 170px;
             height: 100px;
             margin-bottom: 15px;
+            margin-right: 15px;
         }
 
         .carousel-item.bottom-item {
@@ -185,7 +188,7 @@
 
         @keyframes scrollVertical {
             0% { transform: translateY(0); }
-            100% { transform: translateY(-50%); }
+            100% { transform: translateY(-100%); }
         }
 
         .carousel:hover {
