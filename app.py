@@ -380,15 +380,129 @@ def upload_file():
         filepath = os.path.join(IMAGE_FOLDER, filename)
         
         try:
+            # Save file locally
             file.save(filepath)
-            flash('Photo uploaded successfully!')
+            print(f"Photo saved locally: {filepath}")
+            
+            # Upload to Dropbox
+            dropbox_success = upload_to_dropbox(filepath, filename)
+            
+            if dropbox_success:
+                flash('Photo uploaded successfully to gallery and Dropbox!')
+                print(f"SUCCESS: Photo uploaded to both local and Dropbox: {filename}")
+            else:
+                flash('Photo uploaded to gallery, but failed to upload to Dropbox.')
+                print(f"WARNING: Photo uploaded locally but failed to upload to Dropbox: {filename}")
+            
             return redirect(url_for('main'))
         except Exception as e:
             flash(f'Error uploading photo: {str(e)}')
+            print(f"ERROR: Failed to upload photo: {e}")
             return redirect(request.url)
     else:
         flash('Invalid file type. Please upload JPG, PNG, GIF, or WebP images.')
         return redirect(request.url)
+
+def upload_to_dropbox(file_path, filename):
+    """Upload a file to Dropbox"""
+    try:
+        print(f"=== Uploading {filename} to Dropbox ===")
+        
+        # Get Dropbox client
+        dbx = get_dropbox_client()
+        if not dbx:
+            print("ERROR: Failed to connect to Dropbox - no client returned")
+            return False
+        
+        # Determine the correct folder path based on existing structure
+        # Check if sfc30 folder exists in root or Apps
+        try:
+            result = dbx.files_list_folder('')
+            root_files = result.entries
+            
+            # Check if sfc30 folder exists in root
+            party_folder_exists = any(
+                hasattr(entry, 'name') and entry.name == 'sfc30' 
+                and hasattr(entry, '.tag') and entry.tag == 'folder'
+                for entry in root_files
+            )
+            
+            # Check if Apps folder exists
+            apps_folder_exists = any(
+                hasattr(entry, 'name') and entry.name == 'Apps' 
+                and hasattr(entry, '.tag') and entry.tag == 'folder'
+                for entry in root_files
+            )
+            
+            # Determine upload path
+            if party_folder_exists:
+                dropbox_path = f'/sfc30/{filename}'
+                print(f"Uploading to sfc30 folder: {dropbox_path}")
+            elif apps_folder_exists:
+                # Check if sfc30 exists in Apps
+                try:
+                    result = dbx.files_list_folder('/Apps')
+                    apps_contents = result.entries
+                    party_in_apps = any(
+                        hasattr(entry, 'name') and entry.name == 'sfc30'
+                        for entry in apps_contents
+                    )
+                    
+                    if party_in_apps:
+                        dropbox_path = f'/Apps/sfc30/{filename}'
+                        print(f"Uploading to Apps/sfc30 folder: {dropbox_path}")
+                    else:
+                        # Create sfc30 folder in Apps
+                        try:
+                            dbx.files_create_folder_v2('/Apps/sfc30')
+                            print("Created sfc30 folder in Apps")
+                        except dropbox.exceptions.ApiError as e:
+                            if "conflict" not in str(e).lower():
+                                print(f"Error creating folder: {e}")
+                        dropbox_path = f'/Apps/sfc30/{filename}'
+                        print(f"Uploading to newly created Apps/sfc30 folder: {dropbox_path}")
+                        
+                except Exception as e:
+                    print(f"Error checking Apps folder: {e}")
+                    dropbox_path = f'/{filename}'
+                    print(f"Uploading to root folder: {dropbox_path}")
+            else:
+                # Create sfc30 folder in root
+                try:
+                    dbx.files_create_folder_v2('/sfc30')
+                    print("Created sfc30 folder in root")
+                except dropbox.exceptions.ApiError as e:
+                    if "conflict" not in str(e).lower():
+                        print(f"Error creating folder: {e}")
+                dropbox_path = f'/sfc30/{filename}'
+                print(f"Uploading to newly created sfc30 folder: {dropbox_path}")
+            
+        except Exception as e:
+            print(f"Error determining folder structure: {e}")
+            dropbox_path = f'/{filename}'
+            print(f"Uploading to root folder: {dropbox_path}")
+        
+        # Read file content and upload
+        with open(file_path, 'rb') as f:
+            file_content = f.read()
+        
+        print(f"Uploading file {filename} ({len(file_content)} bytes) to {dropbox_path}")
+        
+        # Upload file to Dropbox
+        dbx.files_upload(
+            file_content,
+            dropbox_path,
+            mode=dropbox.files.WriteMode.overwrite
+        )
+        
+        print(f"SUCCESS: Uploaded {filename} to Dropbox")
+        return True
+        
+    except Exception as e:
+        print(f"ERROR uploading {filename} to Dropbox: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return False
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
