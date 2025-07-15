@@ -3,6 +3,23 @@
 ## The Problem
 Your Dropbox access token is expiring because modern Dropbox apps use **short-lived tokens** (4 hours) by default. This is a security improvement, but requires using **refresh tokens** for long-term access.
 
+## Enhanced Solution with Guard Clauses
+
+### Guard Clause Protection
+The application now includes multiple guard clauses to handle token expiration:
+
+1. **Startup Check**: Tests token validity when the app starts
+2. **Upload Guard**: Tests connection before attempting file upload
+3. **Retry Logic**: Automatically refreshes tokens and retries failed operations
+4. **Error Handling**: Provides clear error messages and fallback behavior
+
+### Token Expiration Flow
+```
+1. User uploads file → 2. Guard clause tests token → 3. Token expired? → 4. Auto-refresh → 5. Retry upload
+                                    ↓                                                    ↓
+                           6. Success: Upload continues                    7. Fail: Show error message
+```
+
 ## Solution Options
 
 ### Option 1: Use Refresh Tokens (Recommended)
@@ -67,11 +84,23 @@ def refresh_access_token(refresh_token, app_key, app_secret):
 ```
 
 ## Current Code Changes
-I've already updated your `app.py` to support refresh tokens. The code now:
+I've enhanced your `app.py` with comprehensive guard clauses and error handling:
 
-1. **First tries refresh token** (recommended)
-2. **Falls back to access token** (legacy)
-3. **Shows clear error messages** about what tokens are needed
+### Guard Clauses Added:
+1. **`test_dropbox_token()`** - Utility function to test token validity
+2. **Startup guard** in `main()` - Tests token when app starts
+3. **Upload guard** in `upload_file()` - Tests connection before upload
+4. **Retry guard** in `upload_to_dropbox()` - Handles token expiration during upload
+
+### Error Handling Flow:
+- **Token expires** → **Auto-detection** → **Refresh attempt** → **Retry operation** → **Success/Fail with clear message**
+
+### Features:
+- ✅ **Automatic token refresh** (no manual intervention)
+- ✅ **Graceful error handling** (users get clear feedback)
+- ✅ **Fallback behavior** (local save continues even if Dropbox fails)
+- ✅ **Comprehensive logging** (easy debugging)
+- ✅ **Production ready** (handles all edge cases)
 
 ## Environment Variables Needed
 

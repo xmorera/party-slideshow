@@ -458,15 +458,49 @@ def upload_to_dropbox(file_path, filename):
         
         print(f"Uploading file {filename} ({len(file_content)} bytes) to {dropbox_path}")
         
-        # Upload file to Dropbox
-        dbx.files_upload(
-            file_content,
-            dropbox_path,
-            mode=dropbox.files.WriteMode.overwrite
-        )
-        
-        print(f"SUCCESS: Uploaded {filename} to Dropbox")
-        return True
+        # Guard clause: Try upload with token expiration handling
+        try:
+            # Upload file to Dropbox
+            dbx.files_upload(
+                file_content,
+                dropbox_path,
+                mode=dropbox.files.WriteMode.overwrite
+            )
+            
+            print(f"SUCCESS: Uploaded {filename} to Dropbox")
+            return True
+            
+        except dropbox.exceptions.AuthError as auth_error:
+            print(f"Authentication error during upload: {auth_error}")
+            
+            if 'expired_access_token' in str(auth_error):
+                print("Token expired during upload - attempting to refresh and retry...")
+                
+                # Try to get a fresh client and retry
+                fresh_dbx = get_dropbox_client_with_retry()
+                if fresh_dbx:
+                    try:
+                        print("Retrying upload with refreshed token...")
+                        fresh_dbx.files_upload(
+                            file_content,
+                            dropbox_path,
+                            mode=dropbox.files.WriteMode.overwrite
+                        )
+                        print(f"SUCCESS: Uploaded {filename} to Dropbox after token refresh")
+                        return True
+                    except Exception as retry_error:
+                        print(f"ERROR: Upload failed even after token refresh: {retry_error}")
+                        return False
+                else:
+                    print("ERROR: Could not refresh token for retry")
+                    return False
+            else:
+                print(f"Authentication error (not expired token): {auth_error}")
+                return False
+                
+        except Exception as upload_error:
+            print(f"ERROR: Upload failed with non-auth error: {upload_error}")
+            return False
         
     except Exception as e:
         print(f"ERROR uploading {filename} to Dropbox: {e}")
@@ -505,6 +539,12 @@ def allowed_file(filename):
 
 @app.route('/')
 def main():
+    # Guard clause: Test Dropbox connection on startup
+    if not test_dropbox_token():
+        print("WARNING: Dropbox token test failed on startup")
+        print("App will continue but Dropbox features may not work")
+        print("To fix: Run generate_refresh_token.py to get a valid refresh token")
+    
     # Try to sync with Dropbox on page load
     try:
         sync_dropbox_images()
@@ -587,7 +627,37 @@ def upload_file():
             file.save(filepath)
             print(f"Photo saved locally: {filepath}")
             
-            # Upload to Dropbox
+            # Guard clause: Test Dropbox connection before upload
+            print("=== Testing Dropbox connection before upload ===")
+            test_dbx = get_dropbox_client_with_retry()
+            
+            if not test_dbx:
+                print("ERROR: Could not establish Dropbox connection")
+                flash('Photo uploaded to gallery, but Dropbox connection failed.')
+                print(f"WARNING: Photo uploaded locally but Dropbox connection failed: {filename}")
+                return redirect(url_for('main'))
+            
+            # Test the connection with a simple API call
+            try:
+                account = test_dbx.users_get_current_account()
+                print(f"SUCCESS: Dropbox connection verified - Connected as {account.name.display_name}")
+            except dropbox.exceptions.AuthError as auth_error:
+                print(f"Authentication error during connection test: {auth_error}")
+                if 'expired_access_token' in str(auth_error):
+                    print("ERROR: Token expired and could not be refreshed")
+                    flash('Photo uploaded to gallery, but Dropbox token expired. Please check your Dropbox configuration.')
+                else:
+                    flash('Photo uploaded to gallery, but Dropbox authentication failed.')
+                print(f"WARNING: Photo uploaded locally but Dropbox auth failed: {filename}")
+                return redirect(url_for('main'))
+            except Exception as e:
+                print(f"ERROR: Dropbox connection test failed: {e}")
+                flash('Photo uploaded to gallery, but Dropbox connection test failed.')
+                print(f"WARNING: Photo uploaded locally but Dropbox test failed: {filename}")
+                return redirect(url_for('main'))
+            
+            # Upload to Dropbox (connection is verified)
+            print("=== Proceeding with Dropbox upload ===")
             dropbox_success = upload_to_dropbox(filepath, filename)
             
             if dropbox_success:
@@ -605,6 +675,35 @@ def upload_file():
     else:
         flash('Invalid file type. Please upload JPG, PNG, GIF, or WebP images.')
         return redirect(request.url)
+
+def test_dropbox_token():
+    """Test if the current Dropbox token is valid and working"""
+    try:
+        print("=== Testing Dropbox token validity ===")
+        
+        # Try to get a client
+        dbx = get_dropbox_client_with_retry()
+        if not dbx:
+            print("ERROR: Could not create Dropbox client")
+            return False
+        
+        # Test with a simple API call
+        try:
+            account = dbx.users_get_current_account()
+            print(f"SUCCESS: Token is valid - Connected as {account.name.display_name}")
+            return True
+        except dropbox.exceptions.AuthError as auth_error:
+            print(f"Authentication error: {auth_error}")
+            if 'expired_access_token' in str(auth_error):
+                print("Token has expired and could not be refreshed")
+            return False
+        except Exception as e:
+            print(f"ERROR: API call failed: {e}")
+            return False
+            
+    except Exception as e:
+        print(f"ERROR: Token test failed: {e}")
+        return False
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
