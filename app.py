@@ -28,11 +28,30 @@ DROPBOX_APP_SECRET = os.environ.get('APPSECRET', 'your_new_app_secret_here')
 DROPBOX_FOLDER = ''
 
 def get_dropbox_client():
-    """Get authenticated Dropbox client"""
+    """Get authenticated Dropbox client with refresh token support"""
     try:
         print("=== Creating Dropbox client ===")
         
-        # Read access token from environment or file
+        # Check for refresh token first (recommended approach)
+        refresh_token = os.environ.get('DROPBOX_REFRESH_TOKEN')
+        app_key = os.environ.get('APPKEY', 'your_new_app_key_here')
+        app_secret = os.environ.get('APPSECRET', 'your_new_app_secret_here')
+        
+        if refresh_token and app_key != 'your_new_app_key_here' and app_secret != 'your_new_app_secret_here':
+            print("Using refresh token for authentication...")
+            try:
+                dbx = dropbox.Dropbox(
+                    oauth2_refresh_token=refresh_token,
+                    app_key=app_key,
+                    app_secret=app_secret
+                )
+                print("SUCCESS: Dropbox client created with refresh token")
+                return dbx
+            except Exception as e:
+                print(f"Failed to create client with refresh token: {e}")
+                # Fall back to access token if refresh token fails
+        
+        # Fall back to access token (legacy approach)
         access_token = os.environ.get('DROPBOX_ACCESS_TOKEN')
         print(f"Access token from environment: {'YES' if access_token else 'NO'}")
         
@@ -48,12 +67,15 @@ def get_dropbox_client():
                 print(f"Token loaded from file: {access_token[:10]}... (length: {len(access_token)})")
         
         if not access_token:
-            print("ERROR: No Dropbox access token found. Please set DROPBOX_ACCESS_TOKEN environment variable or create dropbox-token.txt file.")
+            print("ERROR: No Dropbox access token or refresh token found.")
+            print("Please set either:")
+            print("1. DROPBOX_REFRESH_TOKEN (recommended) + APPKEY + APPSECRET")
+            print("2. DROPBOX_ACCESS_TOKEN (legacy)")
             return None
         
         print("Creating Dropbox client with access token...")
         dbx = dropbox.Dropbox(access_token)
-        print("SUCCESS: Dropbox client created")
+        print("SUCCESS: Dropbox client created with access token")
         
         return dbx
     except Exception as e:
