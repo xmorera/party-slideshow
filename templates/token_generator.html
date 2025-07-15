@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dropbox Token Generator - SFC 30</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffeaa7);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradient 3s ease infinite;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .step {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .step-number {
+            display: inline-block;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            margin-right: 15px;
+            font-size: 1.1rem;
+        }
+
+        .step-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #4ecdc4;
+        }
+
+        .step-content {
+            margin-left: 45px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #4ecdc4;
+            box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.3);
+        }
+
+        .input-field::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+            box-shadow: 0 5px 15px rgba(78, 205, 196, 0.4);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(78, 205, 196, 0.6);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.6);
+        }
+
+        .code-block {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            word-break: break-all;
+        }
+
+        .success-message {
+            background: rgba(78, 205, 196, 0.2);
+            border: 1px solid rgba(78, 205, 196, 0.5);
+            color: #c8f7f5;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+
+        .error-message {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid rgba(255, 107, 107, 0.5);
+            color: #ffcccb;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #4ecdc4;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 30px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-size: 1rem;
+        }
+
+        .back-link:hover {
+            color: white;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .url-display {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #4ecdc4;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            background: linear-gradient(45deg, #ffeaa7, #fdcb6e);
+            color: #333;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-left: 10px;
+        }
+
+        .copy-btn:hover {
+            background: linear-gradient(45deg, #fdcb6e, #e17055);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .title {
+                font-size: 2rem;
+            }
+            
+            .step-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">Dropbox Token Generator</h1>
+        <p class="subtitle">Generate a refresh token for your SFC 30 Party Slideshow</p>
+
+        <!-- Step 1: Enter App Credentials -->
+        <div class="step" id="step1">
+            <div class="step-title">
+                <span class="step-number">1</span>
+                Enter Your Dropbox App Credentials
+            </div>
+            <div class="step-content">
+                <p>Get these from your <a href="https://www.dropbox.com/developers/apps" target="_blank" style="color: #4ecdc4;">Dropbox App Console</a></p>
+                
+                <div class="input-group">
+                    <label class="input-label" for="appKey">App Key:</label>
+                    <input type="text" id="appKey" class="input-field" placeholder="Enter your Dropbox app key">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label" for="appSecret">App Secret:</label>
+                    <input type="text" id="appSecret" class="input-field" placeholder="Enter your Dropbox app secret">
+                </div>
+                
+                <button class="btn btn-primary" onclick="generateAuthUrl()">Generate Authorization URL</button>
+            </div>
+        </div>
+
+        <!-- Step 2: Authorize App -->
+        <div class="step hidden" id="step2">
+            <div class="step-title">
+                <span class="step-number">2</span>
+                Authorize Your App
+            </div>
+            <div class="step-content">
+                <p>Click the button below to open the authorization URL in a new tab:</p>
+                
+                <div class="url-display" id="authUrlDisplay"></div>
+                
+                <button class="btn btn-success" onclick="openAuthUrl()">Open Authorization URL</button>
+                <button class="btn btn-secondary copy-btn" onclick="copyAuthUrl()">Copy URL</button>
+                
+                <p style="margin-top: 20px;">After authorizing, you'll receive an authorization code. Enter it below:</p>
+                
+                <div class="input-group">
+                    <label class="input-label" for="authCode">Authorization Code:</label>
+                    <input type="text" id="authCode" class="input-field" placeholder="Enter the authorization code from Dropbox">
+                </div>
+                
+                <button class="btn btn-primary" onclick="generateTokens()">Generate Tokens</button>
+            </div>
+        </div>
+
+        <!-- Step 3: Results -->
+        <div class="step hidden" id="step3">
+            <div class="step-title">
+                <span class="step-number">3</span>
+                Your Tokens
+            </div>
+            <div class="step-content" id="tokenResults"></div>
+        </div>
+
+        <!-- Loading indicator -->
+        <div class="loading" id="loadingIndicator">
+            <div class="spinner"></div>
+            <p>Processing...</p>
+        </div>
+
+        <!-- Messages -->
+        <div id="messages"></div>
+
+        <a href="/" class="back-link">← Back to Gallery</a>
+    </div>
+
+    <script>
+        let currentAuthUrl = '';
+        let currentAppKey = '';
+        let currentAppSecret = '';
+
+        function showMessage(message, type = 'success') {
+            const messagesDiv = document.getElementById('messages');
+            const messageClass = type === 'success' ? 'success-message' : 'error-message';
+            
+            messagesDiv.innerHTML = `<div class="${messageClass}">${message}</div>`;
+            
+            // Auto-hide after 10 seconds
+            setTimeout(() => {
+                messagesDiv.innerHTML = '';
+            }, 10000);
+        }
+
+        function showLoading(show = true) {
+            const loading = document.getElementById('loadingIndicator');
+            loading.style.display = show ? 'block' : 'none';
+        }
+
+        function generateAuthUrl() {
+            const appKey = document.getElementById('appKey').value.trim();
+            const appSecret = document.getElementById('appSecret').value.trim();
+            
+            if (!appKey || !appSecret) {
+                showMessage('Please enter both App Key and App Secret', 'error');
+                return;
+            }
+            
+            currentAppKey = appKey;
+            currentAppSecret = appSecret;
+            
+            // Generate the authorization URL
+            const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${encodeURIComponent(appKey)}&response_type=code&token_access_type=offline`;
+            
+            currentAuthUrl = authUrl;
+            
+            // Show step 2
+            document.getElementById('step2').classList.remove('hidden');
+            document.getElementById('authUrlDisplay').innerHTML = `<strong>Authorization URL:</strong><br>${authUrl}`;
+            
+            // Scroll to step 2
+            document.getElementById('step2').scrollIntoView({ behavior: 'smooth' });
+            
+            showMessage('Authorization URL generated! Click "Open Authorization URL" to continue.', 'success');
+        }
+
+        function openAuthUrl() {
+            if (currentAuthUrl) {
+                window.open(currentAuthUrl, '_blank');
+                showMessage('Authorization URL opened in a new tab. After authorizing, enter the code below.', 'success');
+            }
+        }
+
+        function copyAuthUrl() {
+            if (currentAuthUrl) {
+                navigator.clipboard.writeText(currentAuthUrl).then(() => {
+                    showMessage('Authorization URL copied to clipboard!', 'success');
+                });
+            }
+        }
+
+        async function generateTokens() {
+            const authCode = document.getElementById('authCode').value.trim();
+            
+            if (!authCode) {
+                showMessage('Please enter the authorization code', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                // Call the Flask endpoint to generate tokens
+                const response = await fetch('/generate-tokens', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        app_key: currentAppKey,
+                        app_secret: currentAppSecret,
+                        auth_code: authCode
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Show success results
+                    const envUpdateMsg = data.env_updated ? 
+                        '<div class="success-message"><strong>✅ Environment variables automatically updated in .env file!</strong></div>' :
+                        '<div class="error-message"><strong>⚠️ Environment variables not updated automatically. Please set them manually.</strong></div>';
+                    
+                    const resultsHtml = `
+                        <div class="success-message">
+                            <strong>Success! Your tokens have been generated:</strong>
+                        </div>
+                        
+                        ${envUpdateMsg}
+                        
+                        <div class="code-block">
+                            <strong>Access Token:</strong><br>
+                            ${data.access_token}
+                        </div>
+                        
+                        <div class="code-block">
+                            <strong>Refresh Token:</strong><br>
+                            ${data.refresh_token}
+                        </div>
+                        
+                        <div class="code-block">
+                            <strong>Account ID:</strong><br>
+                            ${data.account_id}
+                        </div>
+                        
+                        <div class="success-message">
+                            <strong>Environment Variables for Production:</strong><br>
+                            <div class="code-block">
+                                APPKEY=${currentAppKey}<br>
+                                APPSECRET=${currentAppSecret}<br>
+                                DROPBOX_ACCESS_TOKEN=${data.access_token}<br>
+                                DROPBOX_REFRESH_TOKEN=${data.refresh_token}
+                            </div>
+                        </div>
+                        
+                        <div class="success-message">
+                            <strong>Next Steps:</strong><br>
+                            1. ${data.env_updated ? 'Environment variables have been updated locally' : 'Set the environment variables above in your production environment'}<br>
+                            2. For Render deployment: Update environment variables in your Render dashboard<br>
+                            3. Restart your application<br>
+                            4. The refresh token will NOT expire and will automatically refresh access tokens<br>
+                            5. Your Dropbox integration should now work without token expiration issues
+                        </div>
+                        
+                        <button class="btn btn-success" onclick="copyTokens()">Copy All Tokens</button>
+                        <button class="btn btn-primary" onclick="testTokens()">Test Tokens</button>
+                        <button class="btn btn-secondary" onclick="refreshAccessToken()">Refresh Access Token</button>
+                    `;
+                    
+                    document.getElementById('tokenResults').innerHTML = resultsHtml;
+                    document.getElementById('step3').classList.remove('hidden');
+                    
+                    // Store tokens for copying
+                    window.generatedTokens = {
+                        appKey: currentAppKey,
+                        appSecret: currentAppSecret,
+                        accessToken: data.access_token,
+                        refreshToken: data.refresh_token,
+                        accountId: data.account_id
+                    };
+                    
+                    // Scroll to results
+                    document.getElementById('step3').scrollIntoView({ behavior: 'smooth' });
+                    
+                    showMessage('Tokens generated successfully! Your app should now work without token expiration issues.', 'success');
+                } else {
+                    showMessage(`Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Network error: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function copyTokens() {
+            if (window.generatedTokens) {
+                const tokens = window.generatedTokens;
+                const tokenText = `APPKEY=${tokens.appKey}
+APPSECRET=${tokens.appSecret}
+DROPBOX_ACCESS_TOKEN=${tokens.accessToken}
+DROPBOX_REFRESH_TOKEN=${tokens.refreshToken}`;
+                
+                navigator.clipboard.writeText(tokenText).then(() => {
+                    showMessage('All tokens copied to clipboard!', 'success');
+                });
+            }
+        }
+
+        async function testTokens() {
+            if (!window.generatedTokens) {
+                showMessage('No tokens to test', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                const response = await fetch('/test-dropbox-token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        refresh_token: window.generatedTokens.refreshToken,
+                        app_key: window.generatedTokens.appKey,
+                        app_secret: window.generatedTokens.appSecret
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage(`Token test successful! Connected as ${data.user_name} (${data.user_email})`, 'success');
+                } else {
+                    showMessage(`Token test failed: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Token test error: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function refreshAccessToken() {
+            showLoading(true);
+            
+            try {
+                const response = await fetch('/update-access-token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update the displayed access token
+                    const accessTokenElements = document.querySelectorAll('.code-block');
+                    accessTokenElements.forEach(element => {
+                        if (element.innerHTML.includes('Access Token:')) {
+                            element.innerHTML = `<strong>Access Token:</strong><br>${data.access_token}`;
+                        }
+                    });
+                    
+                    // Update stored tokens
+                    if (window.generatedTokens) {
+                        window.generatedTokens.accessToken = data.access_token;
+                    }
+                    
+                    showMessage('Access token refreshed successfully!', 'success');
+                } else {
+                    showMessage(`Failed to refresh access token: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Access token refresh error: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+    </script>
+</body>
+</html>

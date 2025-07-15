@@ -77,6 +77,23 @@
             cursor: pointer;
         }
 
+        .token-btn {
+            position: absolute;
+            top: 10px;
+            right: 290px;
+            padding: 10px 20px;
+            background: linear-gradient(45deg, #9b59b6, #8e44ad);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(155, 89, 182, 0.4);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
         .upload-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(78, 205, 196, 0.6);
@@ -87,6 +104,13 @@
         .sync-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(243, 156, 18, 0.6);
+            color: white;
+            text-decoration: none;
+        }
+
+        .token-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(155, 89, 182, 0.6);
             color: white;
             text-decoration: none;
         }
@@ -244,7 +268,7 @@
                 height: 80px;
             }
             
-            .upload-btn, .sync-btn {
+            .upload-btn, .sync-btn, .token-btn {
                 position: static !important;
                 display: inline-block;
                 margin: 5px;
@@ -282,7 +306,7 @@
                 height: 60px;
             }
             
-            .upload-btn, .sync-btn {
+            .upload-btn, .sync-btn, .token-btn {
                 font-size: 0.8rem;
                 padding: 8px 16px;
             }
@@ -306,6 +330,7 @@
                  alt="SFC Logo" 
                  class="logo">
             <a href="{{ url_for('upload_page') }}" class="upload-btn">📸 Add Photo</a>
+            <a href="{{ url_for('token_generator_page') }}" class="token-btn">🔑 Token</a>
             <button onclick="syncDropbox()" class="sync-btn" id="syncBtn">☁️ Sync</button>
         </div>
         

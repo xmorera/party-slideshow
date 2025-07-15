@@ -22,8 +22,19 @@ The application now includes multiple guard clauses to handle token expiration:
 
 ## Solution Options
 
-### Option 1: Use Refresh Tokens (Recommended)
-Refresh tokens don't expire and are the modern, secure approach.
+### Option 1: Use Web Interface (Easiest)
+The easiest way to generate a refresh token is through the web interface:
+
+1. **Start your app**: Make sure your Flask app is running
+2. **Open token generator**: Go to `http://localhost:5000/generate-dropbox-token`
+3. **Enter credentials**: Input your Dropbox app key and secret
+4. **Authorize**: Click to open the Dropbox authorization URL
+5. **Get code**: Copy the authorization code from Dropbox
+6. **Generate tokens**: Paste the code and click "Generate Tokens"
+7. **Copy tokens**: Copy the generated environment variables
+
+### Option 2: Use Command Line
+If you prefer the command line approach:
 
 #### Step 1: Generate a Refresh Token
 ```bash
@@ -43,7 +54,7 @@ set APPSECRET=your_app_secret
 set DROPBOX_REFRESH_TOKEN=your_refresh_token
 ```
 
-### Option 2: Request Long-lived Tokens (Legacy)
+### Option 3: Request Long-lived Tokens (Legacy)
 If you want to keep using access tokens, you can request long-lived tokens from Dropbox:
 
 1. Go to your [Dropbox App Console](https://www.dropbox.com/developers/apps)
@@ -55,7 +66,7 @@ If you want to keep using access tokens, you can request long-lived tokens from 
 
 **Note**: This option may not be available for new apps and is being phased out.
 
-### Option 3: Automatic Token Refresh (Advanced)
+### Option 4: Automatic Token Refresh (Advanced)
 For production applications, you can implement automatic token refresh:
 
 ```python

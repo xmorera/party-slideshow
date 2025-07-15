@@ -15,6 +15,65 @@ except ImportError:
     # python-dotenv not installed, that's okay
     pass
 
+def update_env_variable(key, value):
+    """Update environment variable both in current process and .env file"""
+    try:
+        # Update in current process
+        os.environ[key] = value
+        
+        # Update in .env file for persistence
+        env_file_path = os.path.join(os.path.dirname(__file__), '.env')
+        
+        # Read existing .env file
+        env_vars = {}
+        if os.path.exists(env_file_path):
+            with open(env_file_path, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        k, v = line.split('=', 1)
+                        env_vars[k] = v
+        
+        # Update the variable
+        env_vars[key] = value
+        
+        # Write back to .env file
+        with open(env_file_path, 'w') as f:
+            for k, v in env_vars.items():
+                f.write(f"{k}={v}\n")
+        
+        print(f"SUCCESS: Updated {key} in environment and .env file")
+        return True
+        
+    except Exception as e:
+        print(f"ERROR: Failed to update {key}: {e}")
+        return False
+
+def get_current_access_token():
+    """Get current access token from a refresh token"""
+    try:
+        refresh_token = os.environ.get('DROPBOX_REFRESH_TOKEN')
+        app_key = os.environ.get('APPKEY')
+        app_secret = os.environ.get('APPSECRET')
+        
+        if not all([refresh_token, app_key, app_secret]):
+            return None
+            
+        # Create Dropbox client with refresh token
+        dbx = dropbox.Dropbox(
+            oauth2_refresh_token=refresh_token,
+            app_key=app_key,
+            app_secret=app_secret
+        )
+        
+        # Get current access token
+        auth_result = dbx._oauth2_access_token_from_refresh_token(refresh_token)
+        return auth_result.get('access_token')
+        
+    except Exception as e:
+        print(f"ERROR: Failed to get current access token: {e}")
+        return None
+
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'  # Change this to a random secret key
 IMAGE_FOLDER = os.path.join(os.path.dirname(__file__), 'images')
@@ -676,6 +735,117 @@ def upload_file():
         flash('Invalid file type. Please upload JPG, PNG, GIF, or WebP images.')
         return redirect(request.url)
 
+@app.route('/generate-dropbox-token')
+def token_generator_page():
+    """Serve the token generator page"""
+    return render_template('token_generator.html')
+
+@app.route('/generate-tokens', methods=['POST'])
+def generate_tokens():
+    """Generate Dropbox tokens via web interface"""
+    try:
+        data = request.get_json()
+        app_key = data.get('app_key')
+        app_secret = data.get('app_secret')
+        auth_code = data.get('auth_code')
+        
+        if not all([app_key, app_secret, auth_code]):
+            return jsonify({'success': False, 'error': 'Missing required parameters'})
+        
+        # Create OAuth2 flow
+        auth_flow = dropbox.DropboxOAuth2FlowNoRedirect(
+            app_key, 
+            app_secret,
+            token_access_type='offline'  # This is key for getting refresh tokens
+        )
+        
+        # Complete the OAuth flow
+        oauth_result = auth_flow.finish(auth_code)
+        
+        # Test the refresh token
+        try:
+            test_dbx = dropbox.Dropbox(
+                oauth2_refresh_token=oauth_result.refresh_token,
+                app_key=app_key,
+                app_secret=app_secret
+            )
+            account = test_dbx.users_get_current_account()
+            user_name = account.name.display_name
+            user_email = account.email
+            
+            print(f"SUCCESS: Generated tokens for {user_name} ({user_email})")
+            
+        except Exception as e:
+            print(f"WARNING: Token validation failed: {e}")
+            user_name = "Unknown"
+            user_email = "Unknown"
+        
+        # Auto-update environment variables
+        env_updated = False
+        if update_env_variable('DROPBOX_ACCESS_TOKEN', oauth_result.access_token):
+            env_updated = True
+            print(f"SUCCESS: Auto-updated DROPBOX_ACCESS_TOKEN")
+        
+        if update_env_variable('DROPBOX_REFRESH_TOKEN', oauth_result.refresh_token):
+            env_updated = True
+            print(f"SUCCESS: Auto-updated DROPBOX_REFRESH_TOKEN")
+        
+        if update_env_variable('APPKEY', app_key):
+            env_updated = True
+            print(f"SUCCESS: Auto-updated APPKEY")
+        
+        if update_env_variable('APPSECRET', app_secret):
+            env_updated = True
+            print(f"SUCCESS: Auto-updated APPSECRET")
+
+        return jsonify({
+            'success': True,
+            'access_token': oauth_result.access_token,
+            'refresh_token': oauth_result.refresh_token,
+            'account_id': oauth_result.account_id,
+            'user_name': user_name,
+            'user_email': user_email,
+            'env_updated': env_updated
+        })
+        
+    except Exception as e:
+        print(f"ERROR: Token generation failed: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/test-dropbox-token', methods=['POST'])
+def test_dropbox_token_endpoint():
+    """Test a Dropbox token via web interface"""
+    try:
+        data = request.get_json()
+        refresh_token = data.get('refresh_token')
+        app_key = data.get('app_key')
+        app_secret = data.get('app_secret')
+        
+        if not all([refresh_token, app_key, app_secret]):
+            return jsonify({'success': False, 'error': 'Missing required parameters'})
+        
+        # Test the refresh token
+        test_dbx = dropbox.Dropbox(
+            oauth2_refresh_token=refresh_token,
+            app_key=app_key,
+            app_secret=app_secret
+        )
+        
+        account = test_dbx.users_get_current_account()
+        
+        print(f"SUCCESS: Token test passed for {account.name.display_name}")
+        
+        return jsonify({
+            'success': True,
+            'user_name': account.name.display_name,
+            'user_email': account.email,
+            'account_id': account.account_id
+        })
+        
+    except Exception as e:
+        print(f"ERROR: Token test failed: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
 def test_dropbox_token():
     """Test if the current Dropbox token is valid and working"""
     try:
@@ -704,6 +874,36 @@ def test_dropbox_token():
     except Exception as e:
         print(f"ERROR: Token test failed: {e}")
         return False
+
+@app.route('/update-access-token', methods=['POST'])
+def update_access_token():
+    """Update the access token from refresh token"""
+    try:
+        # Get new access token from refresh token
+        new_access_token = get_current_access_token()
+        
+        if not new_access_token:
+            return jsonify({
+                'success': False, 
+                'error': 'Failed to get new access token. Check your refresh token and app credentials.'
+            })
+        
+        # Update the environment variable
+        if update_env_variable('DROPBOX_ACCESS_TOKEN', new_access_token):
+            return jsonify({
+                'success': True,
+                'access_token': new_access_token,
+                'message': 'Access token updated successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to update access token environment variable'
+            })
+            
+    except Exception as e:
+        print(f"ERROR: Update access token failed: {e}")
+        return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
