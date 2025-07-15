@@ -3,3 +3,4 @@ gunicorn
 werkzeug
 dropbox
 python-dotenv
+requests

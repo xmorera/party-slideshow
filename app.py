@@ -28,7 +28,7 @@ DROPBOX_APP_SECRET = os.environ.get('APPSECRET', 'your_new_app_secret_here')
 DROPBOX_FOLDER = ''
 
 def get_dropbox_client():
-    """Get authenticated Dropbox client with refresh token support"""
+    """Get authenticated Dropbox client with automatic token refresh"""
     try:
         print("=== Creating Dropbox client ===")
         
@@ -84,6 +84,94 @@ def get_dropbox_client():
         print(f"Traceback: {traceback.format_exc()}")
         return None
 
+def refresh_access_token(refresh_token, app_key, app_secret):
+    """Refresh an expired access token using the refresh token"""
+    try:
+        print("=== Refreshing access token ===")
+        import requests
+        
+        response = requests.post('https://api.dropboxapi.com/oauth2/token', data={
+            'grant_type': 'refresh_token',
+            'refresh_token': refresh_token,
+            'client_id': app_key,
+            'client_secret': app_secret
+        })
+        
+        if response.status_code == 200:
+            token_data = response.json()
+            new_access_token = token_data['access_token']
+            print(f"SUCCESS: New access token generated: {new_access_token[:10]}...")
+            
+            # Update the token file if it exists
+            token_file = os.path.join(os.path.dirname(__file__), 'dropbox-token.txt')
+            if os.path.exists(token_file):
+                with open(token_file, 'w') as f:
+                    f.write(new_access_token)
+                print("Updated token file with new access token")
+            
+            return new_access_token
+        else:
+            print(f"Failed to refresh token: Status {response.status_code}")
+            print(f"Response: {response.text}")
+            return None
+    except Exception as e:
+        print(f"Error refreshing token: {e}")
+        return None
+
+def get_dropbox_client_with_retry():
+    """Get Dropbox client with automatic token refresh on expiration"""
+    try:
+        # First attempt - try with existing tokens
+        dbx = get_dropbox_client()
+        if not dbx:
+            return None
+        
+        # Test the connection to see if token is valid
+        try:
+            account = dbx.users_get_current_account()
+            print(f"Token is valid - Connected as {account.name.display_name}")
+            return dbx
+        except dropbox.exceptions.AuthError as auth_error:
+            print(f"Authentication error: {auth_error}")
+            
+            # Check if it's an expired token error
+            if 'expired_access_token' in str(auth_error):
+                print("Access token has expired - attempting to refresh...")
+                
+                # Try to refresh the token
+                refresh_token = os.environ.get('DROPBOX_REFRESH_TOKEN')
+                app_key = os.environ.get('APPKEY', 'your_new_app_key_here')
+                app_secret = os.environ.get('APPSECRET', 'your_new_app_secret_here')
+                
+                if refresh_token and app_key != 'your_new_app_key_here' and app_secret != 'your_new_app_secret_here':
+                    new_access_token = refresh_access_token(refresh_token, app_key, app_secret)
+                    
+                    if new_access_token:
+                        print("Creating new Dropbox client with refreshed token...")
+                        try:
+                            # Create new client with refreshed token
+                            new_dbx = dropbox.Dropbox(new_access_token)
+                            # Test the new connection
+                            account = new_dbx.users_get_current_account()
+                            print(f"SUCCESS: Refreshed token works - Connected as {account.name.display_name}")
+                            return new_dbx
+                        except Exception as e:
+                            print(f"Failed to create client with refreshed token: {e}")
+                    else:
+                        print("Failed to refresh access token")
+                else:
+                    print("Cannot refresh token - missing refresh token or app credentials")
+                    print("Please run generate_refresh_token.py to get a refresh token")
+            
+            return None
+        except Exception as e:
+            print(f"Error testing Dropbox connection: {e}")
+            return None
+            
+    except Exception as e:
+        print(f"Error in get_dropbox_client_with_retry: {e}")
+        return None
+
 def sync_dropbox_images():
     """Sync images from Dropbox to local images folder"""
     try:
@@ -98,21 +186,13 @@ def sync_dropbox_images():
         print(f"App Secret: {app_secret[:10]}... (length: {len(app_secret)})")
         print(f"Access Token from env: {'YES' if access_token else 'NO'}")
         
-        # Get Dropbox client
-        dbx = get_dropbox_client()
+        # Get Dropbox client with automatic token refresh
+        dbx = get_dropbox_client_with_retry()
         if not dbx:
             print("ERROR: Failed to connect to Dropbox - no client returned")
             return False
         
-        print("SUCCESS: Dropbox client created")
-        
-        # Test connection by getting account info
-        try:
-            account = dbx.users_get_current_account()
-            print(f"SUCCESS: Connected as {account.name.display_name} ({account.email})")
-        except Exception as e:
-            print(f"ERROR: Failed to get account info: {e}")
-            return False
+        print("SUCCESS: Dropbox client created and authenticated")
         
         # Create local images directory if it doesn't exist
         os.makedirs(IMAGE_FOLDER, exist_ok=True)
@@ -298,8 +378,8 @@ def upload_to_dropbox(file_path, filename):
     try:
         print(f"=== Uploading {filename} to Dropbox ===")
         
-        # Get Dropbox client
-        dbx = get_dropbox_client()
+        # Get Dropbox client with automatic token refresh
+        dbx = get_dropbox_client_with_retry()
         if not dbx:
             print("ERROR: Failed to connect to Dropbox - no client returned")
             return False

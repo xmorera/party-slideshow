@@ -60,6 +60,18 @@ def generate_refresh_token():
         print(f"Refresh Token: {oauth_result.refresh_token}")
         print(f"Account ID: {oauth_result.account_id}")
         
+        # Test the refresh token by making a simple API call
+        try:
+            test_dbx = dropbox.Dropbox(
+                oauth2_refresh_token=oauth_result.refresh_token,
+                app_key=app_key,
+                app_secret=app_secret
+            )
+            account = test_dbx.users_get_current_account()
+            print(f"Token validation successful - Connected as {account.name.display_name}")
+        except Exception as e:
+            print(f"WARNING: Token validation failed: {e}")
+        
         # Save to environment file
         env_content = f"""# Dropbox Configuration
 APPKEY={app_key}
@@ -79,12 +91,18 @@ DROPBOX_REFRESH_TOKEN={oauth_result.refresh_token}
         print(f"APPSECRET={app_secret}")
         print(f"DROPBOX_REFRESH_TOKEN={oauth_result.refresh_token}")
         print("\nThe refresh token will NOT expire and is the recommended approach.")
+        print("Your app will now automatically refresh access tokens when they expire!")
         print("="*60)
         
         return oauth_result.refresh_token
         
     except Exception as e:
         print(f"\nERROR: Failed to complete OAuth flow: {e}")
+        print("Common issues:")
+        print("1. Invalid authorization code")
+        print("2. Code has expired (try again quickly)")
+        print("3. App key/secret mismatch")
+        print("4. Network connectivity issues")
         return None
 
 if __name__ == "__main__":
