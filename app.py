@@ -267,106 +267,30 @@ def sync_dropbox_images():
         print(f"Found {len(existing_images)} existing local images: {list(existing_images)}")
         print(f"Checking Dropbox folder: '{DROPBOX_FOLDER}' (empty = root folder)")
         
-        # First, let's list the root directory to see what's there
+        # For Dropbox apps, we operate within the app folder automatically
+        # List images directly from the app folder root
         try:
-            print("=== Listing root directory structure ===")
+            print("=== Listing app folder root for images ===")
             result = dbx.files_list_folder('')
-            root_files = result.entries
+            dropbox_files = result.entries
             
-            for entry in root_files:
-                if hasattr(entry, 'name'):
-                    entry_type = "folder" if hasattr(entry, '.tag') and entry.tag == 'folder' else "file"
-                    print(f"Root entry: {entry.name} ({entry_type})")
+            # Handle pagination
+            while result.has_more:
+                result = dbx.files_list_folder_continue(result.cursor)
+                dropbox_files.extend(result.entries)
             
-            # Check different possible folder locations
-            folders_to_check = [
-                ('sfc30', '/sfc30'),
-                ('Apps', '/Apps'),
-                ('Apps/sfc30', '/Apps/sfc30')
-            ]
+            actual_folder_path = ''  # Root of app folder
+            print(f"Found {len(dropbox_files)} total files in app folder root")
             
-            dropbox_files = []
-            actual_folder_path = ''
-            
-            # Check if there's a sfc30 subfolder
-            party_folder_exists = any(
-                hasattr(entry, 'name') and entry.name == 'sfc30' 
-                and hasattr(entry, '.tag') and entry.tag == 'folder'
-                for entry in root_files
-            )
-            
-            # Check if there's an Apps folder
-            apps_folder_exists = any(
-                hasattr(entry, 'name') and entry.name == 'Apps' 
-                and hasattr(entry, '.tag') and entry.tag == 'folder'
-                for entry in root_files
-            )
-            
-            if party_folder_exists:
-                print("Found 'sfc30' subfolder in root, checking inside...")
-                result = dbx.files_list_folder('/sfc30')
-                dropbox_files = result.entries
-                actual_folder_path = '/sfc30'
-                
-                # Handle pagination
-                while result.has_more:
-                    result = dbx.files_list_folder_continue(result.cursor)
-                    dropbox_files.extend(result.entries)
+            # List all files in app folder root
+            for file_entry in dropbox_files:
+                if hasattr(file_entry, 'name'):
+                    print(f"App folder file: {file_entry.name}")
                     
-            elif apps_folder_exists:
-                print("Found 'Apps' folder, checking for sfc30 inside...")
-                try:
-                    result = dbx.files_list_folder('/Apps')
-                    apps_contents = result.entries
-                    
-                    for entry in apps_contents:
-                        if hasattr(entry, 'name'):
-                            print(f"Apps folder contains: {entry.name}")
-                    
-                    # Check if sfc30 exists in Apps
-                    party_in_apps = any(
-                        hasattr(entry, 'name') and entry.name == 'sfc30'
-                        for entry in apps_contents
-                    )
-                    
-                    if party_in_apps:
-                        print("Found 'sfc30' in Apps folder!")
-                        result = dbx.files_list_folder('/Apps/sfc30')
-                        dropbox_files = result.entries
-                        actual_folder_path = '/Apps/sfc30'
-                        
-                        # Handle pagination
-                        while result.has_more:
-                            result = dbx.files_list_folder_continue(result.cursor)
-                            dropbox_files.extend(result.entries)
-                    else:
-                        print("No 'sfc30' found in Apps folder")
-                        dropbox_files = root_files
-                        actual_folder_path = ''
-                        
-                except Exception as e:
-                    print(f"Error checking Apps folder: {e}")
-                    dropbox_files = root_files
-                    actual_folder_path = ''
-                    
-            else:
-                print("No 'sfc30' or 'Apps' subfolder found, using root folder...")
-                dropbox_files = root_files
-                actual_folder_path = ''
-                
-            print(f"Using folder path: '{actual_folder_path}' (empty = root)")
-                
         except dropbox.exceptions.ApiError as e:
-            print(f"ERROR: Failed to list Dropbox folder '{DROPBOX_FOLDER}': {e}")
+            print(f"ERROR: Failed to list Dropbox app folder: {e}")
             print(f"Error details: {e.error if hasattr(e, 'error') else 'No error details'}")
             return False
-        
-        print(f"Found {len(dropbox_files)} files in Dropbox folder")
-        
-        # List all files in Dropbox folder
-        for file_entry in dropbox_files:
-            if hasattr(file_entry, 'name'):
-                print(f"Dropbox file: {file_entry.name}")
         
         # Filter for image files and check for new ones
         new_images_count = 0
@@ -385,12 +309,8 @@ def sync_dropbox_images():
                     if filename not in existing_images:
                         print(f"New image to download: {filename}")
                         try:
-                            # Download the file using the correct folder path
-                            if actual_folder_path:
-                                dropbox_path = f"{actual_folder_path}/{filename}"
-                            else:
-                                dropbox_path = f"/{filename}"
-                            
+                            # Download the file from app folder root
+                            dropbox_path = f"/{filename}"
                             local_path = os.path.join(IMAGE_FOLDER, filename)
                             
                             print(f"Downloading: {dropbox_path} -> {local_path}")
@@ -443,73 +363,10 @@ def upload_to_dropbox(file_path, filename):
             print("ERROR: Failed to connect to Dropbox - no client returned")
             return False
         
-        # Determine the correct folder path based on existing structure
-        # Check if sfc30 folder exists in root or Apps
-        try:
-            result = dbx.files_list_folder('')
-            root_files = result.entries
-            
-            # Check if sfc30 folder exists in root
-            party_folder_exists = any(
-                hasattr(entry, 'name') and entry.name == 'sfc30' 
-                and hasattr(entry, '.tag') and entry.tag == 'folder'
-                for entry in root_files
-            )
-            
-            # Check if Apps folder exists
-            apps_folder_exists = any(
-                hasattr(entry, 'name') and entry.name == 'Apps' 
-                and hasattr(entry, '.tag') and entry.tag == 'folder'
-                for entry in root_files
-            )
-            
-            # Determine upload path
-            if party_folder_exists:
-                dropbox_path = f'/sfc30/{filename}'
-                print(f"Uploading to sfc30 folder: {dropbox_path}")
-            elif apps_folder_exists:
-                # Check if sfc30 exists in Apps
-                try:
-                    result = dbx.files_list_folder('/Apps')
-                    apps_contents = result.entries
-                    party_in_apps = any(
-                        hasattr(entry, 'name') and entry.name == 'sfc30'
-                        for entry in apps_contents
-                    )
-                    
-                    if party_in_apps:
-                        dropbox_path = f'/Apps/sfc30/{filename}'
-                        print(f"Uploading to Apps/sfc30 folder: {dropbox_path}")
-                    else:
-                        # Create sfc30 folder in Apps
-                        try:
-                            dbx.files_create_folder_v2('/Apps/sfc30')
-                            print("Created sfc30 folder in Apps")
-                        except dropbox.exceptions.ApiError as e:
-                            if "conflict" not in str(e).lower():
-                                print(f"Error creating folder: {e}")
-                        dropbox_path = f'/Apps/sfc30/{filename}'
-                        print(f"Uploading to newly created Apps/sfc30 folder: {dropbox_path}")
-                        
-                except Exception as e:
-                    print(f"Error checking Apps folder: {e}")
-                    dropbox_path = f'/{filename}'
-                    print(f"Uploading to root folder: {dropbox_path}")
-            else:
-                # Create sfc30 folder in root
-                try:
-                    dbx.files_create_folder_v2('/sfc30')
-                    print("Created sfc30 folder in root")
-                except dropbox.exceptions.ApiError as e:
-                    if "conflict" not in str(e).lower():
-                        print(f"Error creating folder: {e}")
-                dropbox_path = f'/sfc30/{filename}'
-                print(f"Uploading to newly created sfc30 folder: {dropbox_path}")
-            
-        except Exception as e:
-            print(f"Error determining folder structure: {e}")
-            dropbox_path = f'/{filename}'
-            print(f"Uploading to root folder: {dropbox_path}")
+        # For Dropbox apps, we operate within the app folder automatically
+        # Upload directly to the app folder root to avoid nested sfc30/sfc30 structure
+        dropbox_path = f'/{filename}'
+        print(f"Uploading to app folder root: {dropbox_path}")
         
         # Read file content and upload
         with open(file_path, 'rb') as f:
@@ -526,7 +383,7 @@ def upload_to_dropbox(file_path, filename):
                 mode=dropbox.files.WriteMode.overwrite
             )
             
-            print(f"SUCCESS: Uploaded {filename} to Dropbox")
+            print(f"SUCCESS: Uploaded {filename} to Dropbox app folder")
             return True
             
         except dropbox.exceptions.AuthError as auth_error:
