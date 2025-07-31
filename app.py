@@ -6,6 +6,7 @@ import uuid
 from datetime import datetime
 import dropbox
 import time
+import sys  # Add this import
 
 # Load environment variables from .env file if it exists
 try:
@@ -297,7 +298,7 @@ def sync_dropbox_images():
     try:
         print("=== Starting Dropbox sync ===")
         
-        # Check environment variables
+        # Check environment variables (only show key info, not full values)
         app_key = os.environ.get('APPKEY', 'your_new_app_key_here')
         app_secret = os.environ.get('APPSECRET', 'your_new_app_secret_here')
         access_token = os.environ.get('DROPBOX_ACCESS_TOKEN')
@@ -325,8 +326,11 @@ def sync_dropbox_images():
                 if os.path.splitext(f)[1].lower() in ALLOWED_EXTENSIONS:
                     existing_images.add(f)
         
-        print(f"Found {len(existing_images)} existing local images: {list(existing_images)}")
-        print(f"Checking Dropbox folder: '{DROPBOX_FOLDER}' (empty = root folder)")
+        print(f"Found {len(existing_images)} existing local images: {list(existing_images)[:5]}{'...' if len(existing_images) > 5 else ''}")
+        
+        # Check which Dropbox folder we're syncing
+        folder_path = DROPBOX_FOLDER if DROPBOX_FOLDER else ''
+        print(f"Checking Dropbox folder: '{folder_path}' {'(empty = root folder)' if not folder_path else ''}")
         
         # For Dropbox apps, we operate within the app folder automatically
         # List images directly from the app folder root
@@ -340,17 +344,15 @@ def sync_dropbox_images():
                 result = dbx.files_list_folder_continue(result.cursor)
                 dropbox_files.extend(result.entries)
             
-            actual_folder_path = ''  # Root of app folder
             print(f"Found {len(dropbox_files)} total files in app folder root")
             
-            # List all files in app folder root
-            for file_entry in dropbox_files:
+            # Show some file names for debugging
+            for file_entry in dropbox_files[:10]:  # Show first 10 files
                 if hasattr(file_entry, 'name'):
                     print(f"App folder file: {file_entry.name}")
-                    
+            
         except dropbox.exceptions.ApiError as e:
             print(f"ERROR: Failed to list Dropbox app folder: {e}")
-            print(f"Error details: {e.error if hasattr(e, 'error') else 'No error details'}")
             return False
         
         # Filter for image files and check for new ones
@@ -395,16 +397,18 @@ def sync_dropbox_images():
                             continue
                     else:
                         print(f"Image already exists locally: {filename}")
-                else:
-                    print(f"Skipping non-image file: {filename} (extension: {file_ext})")
         
-        print(f"=== Sync Summary ===")
-        print(f"Total files in Dropbox: {len(dropbox_files)}")
-        print(f"Image files in Dropbox: {image_files_count}")
-        print(f"Existing local images: {len(existing_images)}")
-        print(f"New images downloaded: {new_images_count}")
+        # Only show detailed summary if there were changes or if verbose logging is needed
+        if new_images_count > 0:
+            print(f"=== Sync Summary ===")
+            print(f"Total files in Dropbox: {len(dropbox_files)}")
+            print(f"Image files in Dropbox: {image_files_count}")
+            print(f"Existing local images: {len(existing_images)}")
+            print(f"New images downloaded: {new_images_count}")
+        else:
+            print(f"Sync complete: {image_files_count} images in sync, no new downloads needed")
+        
         print(f"=== Dropbox sync completed ===")
-        
         return True
         
     except Exception as e:
@@ -514,19 +518,34 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in UPLOAD_EXTENSIONS
 
+LAST_SYNC_TIME = 0
+SYNC_COOLDOWN = 300  # 5 minutes between syncs
+
 @app.route('/')
 def main():
-    # Guard clause: Test Dropbox connection on startup
+    global LAST_SYNC_TIME
+    
+    # Guard clause: Test Dropbox connection on startup (only if needed)
     if not test_dropbox_token():
         print("WARNING: Dropbox token test failed on startup")
         print("App will continue but Dropbox features may not work")
         print("To fix: Run generate_refresh_token.py to get a valid refresh token")
     
-    # Try to sync with Dropbox on page load
-    try:
-        sync_dropbox_images()
-    except Exception as e:
-        print(f"Dropbox sync failed: {e}")
+    # Smart sync: Only sync if enough time has passed since last sync
+    current_time = time.time()
+    if current_time - LAST_SYNC_TIME > SYNC_COOLDOWN:
+        print(f"=== Auto-sync triggered (last sync was {int(current_time - LAST_SYNC_TIME)} seconds ago) ===")
+        try:
+            if sync_dropbox_images():
+                LAST_SYNC_TIME = current_time
+                print("=== Auto-sync completed successfully ===")
+            else:
+                print("=== Auto-sync failed ===")
+        except Exception as e:
+            print(f"Auto-sync error: {e}")
+    else:
+        time_until_next_sync = int(SYNC_COOLDOWN - (current_time - LAST_SYNC_TIME))
+        print(f"Skipping sync (cooldown active, next sync in {time_until_next_sync} seconds)")
     
     images = get_images()
     if not images:
@@ -785,85 +804,86 @@ def test_dropbox_token():
             if 'expired_access_token' in str(auth_error):
                 print("Token has expired and could not be refreshed")
             return False
-        except Exception as e:
+        except Exception as e:le('DROPBOX_ACCESS_TOKEN', new_access_token):
             print(f"ERROR: API call failed: {e}")
             return False
             
-    except Exception as e:
-        print(f"ERROR: Token test failed: {e}")
+    except Exception as e:  'message': 'Access token updated successfully'
+        print(f"ERROR: Token test failed: {e}"))
         return False
 
 @app.route('/update-access-token', methods=['POST'])
-def update_access_token():
-    """Update the access token from refresh token"""
+def update_access_token():  'error': 'Failed to update access token environment variable'
+    """Update the access token from refresh token"""})
     try:
         # Get new access token from refresh token
         new_access_token = get_current_access_token()
-        
+                return jsonify({'success': False, 'error': str(e)})
         if not new_access_token:
-            return jsonify({
+            return jsonify({-token')
                 'success': False, 
-                'error': 'Failed to get new access token. Check your refresh token and app credentials.'
+                'error': 'Failed to get new access token. Check your refresh token and app credentials.'est endpoint to verify refresh token functionality"""
             })
-        
-        # Update the environment variable
+        # Update the environment variableOPBOX_REFRESH_TOKEN')
         if update_env_variable('DROPBOX_ACCESS_TOKEN', new_access_token):
-            return jsonify({
+            return jsonify({app_secret = os.environ.get('APPSECRET')
                 'success': True,
-                'access_token': new_access_token,
+                'access_token': new_access_token,token, app_key, app_secret]):
                 'message': 'Access token updated successfully'
             })
-        else:
-            return jsonify({
+        else:ls',
+            return jsonify({n else 'NO',
                 'success': False,
-                'error': 'Failed to update access token environment variable'
-            })
+                'error': 'Failed to update access token environment variable'  'app_secret': 'YES' if app_secret else 'NO'
+            })    })
             
     except Exception as e:
-        print(f"ERROR: Update access token failed: {e}")
+        print(f"ERROR: Update access token failed: {e}")new_access_token = refresh_access_token(refresh_token, app_key, app_secret)
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/test-refresh-token')
 def test_refresh_token():
-    """Test endpoint to verify refresh token functionality"""
+    """Test endpoint to verify refresh token functionality"""account = test_dbx.users_get_current_account()
     try:
         refresh_token = os.environ.get('DROPBOX_REFRESH_TOKEN')
         app_key = os.environ.get('APPKEY')
-        app_secret = os.environ.get('APPSECRET')
-        
+        app_secret = os.environ.get('APPSECRET')operly',
+        splay_name,
         if not all([refresh_token, app_key, app_secret]):
-            return jsonify({
-                'status': 'error',
+            return jsonify({  'new_token_preview': new_access_token[:20] + '...'
+                'status': 'error',)
                 'message': 'Missing refresh token or app credentials',
                 'refresh_token': 'YES' if refresh_token else 'NO',
                 'app_key': 'YES' if app_key else 'NO',
                 'app_secret': 'YES' if app_secret else 'NO'
-            })
-        
+            })  'refresh_token_preview': refresh_token[:20] + '...' if refresh_token else 'None'
+        })
         # Test refresh token by getting a new access token
-        new_access_token = refresh_access_token(refresh_token, app_key, app_secret)
+        new_access_token = refresh_access_token(refresh_token, app_key, app_secret)e:
         
         if new_access_token:
-            # Test the new access token
+            # Test the new access token  'message': f'Test failed: {str(e)}'
             test_dbx = dropbox.Dropbox(new_access_token)
-            account = test_dbx.users_get_current_account()
-            
-            return jsonify({
-                'status': 'success',
-                'message': 'Refresh token is working properly',
-                'user_name': account.name.display_name,
-                'user_email': account.email,
-                'new_token_preview': new_access_token[:20] + '...'
-            })
-        else:
-            return jsonify({
-                'status': 'error',  
-                'message': 'Failed to refresh access token',
-                'refresh_token_preview': refresh_token[:20] + '...' if refresh_token else 'None'
-            })
-            
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'message': f'Test failed: {str(e)}'
-        })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@app.route('/health')def health_check():    """Simple health check endpoint that doesn't trigger sync"""    return jsonify({        'status': 'healthy',        'timestamp': time.time(),        'images_available': len(get_images())    })@app.route('/ping')def ping():    """Simple ping endpoint for monitoring"""    return 'pong'        })            'message': f'Test failed: {str(e)}'            'status': 'error',        return jsonify({    except Exception as e:                        })                'refresh_token_preview': refresh_token[:20] + '...' if refresh_token else 'None'                'message': 'Failed to refresh access token',                'status': 'error',              return jsonify({        else:            })                'new_token_preview': new_access_token[:20] + '...'                'user_email': account.email,                'user_name': account.name.display_name,                'message': 'Refresh token is working properly',                'status': 'success',            return jsonify({                        account = test_dbx.users_get_current_account()@app.route('/health')def health_check():    """Simple health check endpoint that doesn't trigger sync"""    return jsonify({        'status': 'healthy',        'timestamp': time.time(),        'images_available': len(get_images())    })@app.route('/ping')def ping():    """Simple ping endpoint for monitoring"""    return 'pong'
