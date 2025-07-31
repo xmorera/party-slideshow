@@ -804,86 +804,165 @@ def test_dropbox_token():
             if 'expired_access_token' in str(auth_error):
                 print("Token has expired and could not be refreshed")
             return False
-        except Exception as e:le('DROPBOX_ACCESS_TOKEN', new_access_token):
+        except Exception as e:
             print(f"ERROR: API call failed: {e}")
             return False
             
-    except Exception as e:  'message': 'Access token updated successfully'
-        print(f"ERROR: Token test failed: {e}"))
+    except Exception as e:
+        print(f"ERROR: Token test failed: {e}")
         return False
 
 @app.route('/update-access-token', methods=['POST'])
-def update_access_token():  'error': 'Failed to update access token environment variable'
-    """Update the access token from refresh token"""})
+def update_access_token():
+    """Update the access token from refresh token"""
     try:
         # Get new access token from refresh token
         new_access_token = get_current_access_token()
-                return jsonify({'success': False, 'error': str(e)})
+        
         if not new_access_token:
-            return jsonify({-token')
+            return jsonify({
                 'success': False, 
-                'error': 'Failed to get new access token. Check your refresh token and app credentials.'est endpoint to verify refresh token functionality"""
+                'error': 'Failed to get new access token. Check your refresh token and app credentials.'
             })
-        # Update the environment variableOPBOX_REFRESH_TOKEN')
+            
+        # Update the environment variable
         if update_env_variable('DROPBOX_ACCESS_TOKEN', new_access_token):
-            return jsonify({app_secret = os.environ.get('APPSECRET')
+            return jsonify({
                 'success': True,
-                'access_token': new_access_token,token, app_key, app_secret]):
+                'access_token': new_access_token,
                 'message': 'Access token updated successfully'
             })
-        else:ls',
-            return jsonify({n else 'NO',
+        else:
+            return jsonify({
                 'success': False,
-                'error': 'Failed to update access token environment variable'  'app_secret': 'YES' if app_secret else 'NO'
-            })    })
+                'error': 'Failed to update access token environment variable'
+            })
             
     except Exception as e:
-        print(f"ERROR: Update access token failed: {e}")new_access_token = refresh_access_token(refresh_token, app_key, app_secret)
+        print(f"ERROR: Update access token failed: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/test-refresh-token')
 def test_refresh_token():
-    """Test endpoint to verify refresh token functionality"""account = test_dbx.users_get_current_account()
+    """Test endpoint to verify refresh token functionality"""
     try:
         refresh_token = os.environ.get('DROPBOX_REFRESH_TOKEN')
         app_key = os.environ.get('APPKEY')
-        app_secret = os.environ.get('APPSECRET')operly',
-        splay_name,
+        app_secret = os.environ.get('APPSECRET')
+        
         if not all([refresh_token, app_key, app_secret]):
-            return jsonify({  'new_token_preview': new_access_token[:20] + '...'
-                'status': 'error',)
+            return jsonify({
+                'status': 'error',
                 'message': 'Missing refresh token or app credentials',
                 'refresh_token': 'YES' if refresh_token else 'NO',
                 'app_key': 'YES' if app_key else 'NO',
                 'app_secret': 'YES' if app_secret else 'NO'
-            })  'refresh_token_preview': refresh_token[:20] + '...' if refresh_token else 'None'
-        })
+            })
+        
         # Test refresh token by getting a new access token
-        new_access_token = refresh_access_token(refresh_token, app_key, app_secret)e:
+        new_access_token = refresh_access_token(refresh_token, app_key, app_secret)
         
         if new_access_token:
-            # Test the new access token  'message': f'Test failed: {str(e)}'
-            test_dbx = dropbox.Dropbox(new_access_token)
+            # Test the new access token
+            try:
+                test_dbx = dropbox.Dropbox(new_access_token)
+                account = test_dbx.users_get_current_account()
+                
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Refresh token is working properly',
+                    'user_name': account.name.display_name,
+                    'user_email': account.email,
+                    'new_token_preview': new_access_token[:20] + '...',
+                    'refresh_token_preview': refresh_token[:20] + '...' if refresh_token else 'None'
+                })
+                
+            except Exception as test_error:
+                return jsonify({
+                    'status': 'error',
+                    'message': f'New access token test failed: {str(test_error)}',
+                    'refresh_token_preview': refresh_token[:20] + '...' if refresh_token else 'None'
+                })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to refresh access token',
+                'refresh_token_preview': refresh_token[:20] + '...' if refresh_token else 'None'
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Test failed: {str(e)}'
+        })
 
+@app.route('/health')
+def health_check():
+    """Simple health check endpoint that doesn't trigger sync"""
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': time.time(),
+        'images_available': len(get_images())
+    })
 
+@app.route('/ping')
+def ping():
+    """Simple ping endpoint for monitoring"""
+    return 'pong'
 
+@app.route('/debug-env')
+def debug_env():
+    """Debug endpoint to check environment variables (for development only)"""
+    try:
+        env_info = {}
+        
+        # Check each environment variable
+        variables = ['APPKEY', 'APPSECRET', 'DROPBOX_ACCESS_TOKEN', 'DROPBOX_REFRESH_TOKEN']
+        
+        for var in variables:
+            value = os.environ.get(var)
+            if value:
+                # Show only first 10 chars for security
+                env_info[var] = {
+                    'present': True,
+                    'length': len(value),
+                    'preview': value[:10] + '...' if len(value) > 10 else value
+                }
+            else:
+                env_info[var] = {
+                    'present': False,
+                    'length': 0,
+                    'preview': 'NOT SET'
+                }
+        
+        return jsonify({
+            'status': 'debug',
+            'environment_variables': env_info,
+            'python_version': sys.version,
+            'platform': os.name
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        })
 
+@app.route('/force-sync')
+def force_sync():
+    """Force sync with Dropbox regardless of cooldown"""
+    global LAST_SYNC_TIME
+    
+    try:
+        print("=== Manual sync triggered ===")
+        success = sync_dropbox_images()
+        if success:
+            LAST_SYNC_TIME = time.time()
+            return jsonify({'status': 'success', 'message': 'Manual sync completed successfully'})
+        else:
+            return jsonify({'status': 'error', 'message': 'Manual sync failed'}), 500
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'Manual sync error: {str(e)}'}), 500
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-@app.route('/health')def health_check():    """Simple health check endpoint that doesn't trigger sync"""    return jsonify({        'status': 'healthy',        'timestamp': time.time(),        'images_available': len(get_images())    })@app.route('/ping')def ping():    """Simple ping endpoint for monitoring"""    return 'pong'        })            'message': f'Test failed: {str(e)}'            'status': 'error',        return jsonify({    except Exception as e:                        })                'refresh_token_preview': refresh_token[:20] + '...' if refresh_token else 'None'                'message': 'Failed to refresh access token',                'status': 'error',              return jsonify({        else:            })                'new_token_preview': new_access_token[:20] + '...'                'user_email': account.email,                'user_name': account.name.display_name,                'message': 'Refresh token is working properly',                'status': 'success',            return jsonify({                        account = test_dbx.users_get_current_account()@app.route('/health')def health_check():    """Simple health check endpoint that doesn't trigger sync"""    return jsonify({        'status': 'healthy',        'timestamp': time.time(),        'images_available': len(get_images())    })@app.route('/ping')def ping():    """Simple ping endpoint for monitoring"""    return 'pong'
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
