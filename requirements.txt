@@ -1,6 +1,13 @@
 Flask==2.3.3
-gunicorn
-werkzeug
+gunicorn==23.0.0
+werkzeug==3.0.4
 dropbox==11.36.2
 python-dotenv==1.0.0
 requests==2.31.0
+setuptools==69.5.1
+wheel==0.43.0
+Jinja2==3.1.4
+itsdangerous==2.2.0
+click==8.1.7
+blinker==1.8.2
+MarkupSafe==2.1.5
