@@ -370,6 +370,18 @@
             opacity: 1;
             visibility: visible;
         }
+
+        .main-image-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .main-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -384,6 +396,13 @@
         <div class="header">
             <h1 class="main-title">🎉 SFC 30 Party</h1>
             <p class="subtitle">Share your moments and memories!</p>
+        </div>
+
+        <!-- Main Image Container -->
+        <div class="main-image-container">
+            {% if main_image %}
+                <img src="{{ main_image.url }}" alt="{{ main_image.filename }}" class="main-image">
+            {% endif %}
         </div>
 
         <!-- Carousel Container -->

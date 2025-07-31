@@ -490,29 +490,32 @@ def upload_to_dropbox(file_path, filename):
         return False
 
 def get_images():
-    if not os.path.exists(IMAGE_FOLDER):
+    """Get list of image files from the images folder"""
+    try:
+        if not os.path.exists(IMAGE_FOLDER):
+            print(f"Images folder does not exist: {IMAGE_FOLDER}")
+            return []
+        
+        images = []
+        for filename in os.listdir(IMAGE_FOLDER):
+            if any(filename.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']):
+                # Return the full URL path that matches your route
+                image_url = f"/images/{filename}"
+                images.append({
+                    'filename': filename,
+                    'url': image_url,
+                    'path': os.path.join(IMAGE_FOLDER, filename)
+                })
+        
+        # Sort by modification time (newest first)
+        images.sort(key=lambda x: os.path.getmtime(x['path']), reverse=True)
+        
+        print(f"Found {len(images)} images in {IMAGE_FOLDER}")
+        return images
+        
+    except Exception as e:
+        print(f"ERROR: Failed to get images: {e}")
         return []
-
-    files = [
-        f for f in os.listdir(IMAGE_FOLDER)
-        if os.path.splitext(f)[1].lower() in ALLOWED_EXTENSIONS
-    ]
-
-    full_paths = [os.path.join(IMAGE_FOLDER, f) for f in files]
-    if not full_paths:
-        return []
-
-    # Sort by modification time, newest first
-    sorted_files = sorted(full_paths, key=os.path.getmtime, reverse=True)
-    
-    if len(sorted_files) == 1:
-        return [os.path.basename(sorted_files[0])]
-
-    latest = sorted_files[0]
-    rest = sorted_files[1:]
-    random.shuffle(rest)
-
-    return [os.path.basename(latest)] + [os.path.basename(r) for r in rest]
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -570,7 +573,28 @@ def sync_dropbox():
 
 @app.route('/images/<filename>')
 def serve_image(filename):
-    return send_from_directory(IMAGE_FOLDER, filename)
+    """Serve images from the images folder"""
+    try:
+        return send_from_directory(IMAGE_FOLDER, filename)
+    except FileNotFoundError:
+        # If image not found, try to sync and then serve
+        print(f"Image not found: {filename}, attempting sync...")
+        sync_dropbox_images()
+        try:
+            return send_from_directory(IMAGE_FOLDER, filename)
+        except FileNotFoundError:
+            # Return a placeholder or 404
+            return jsonify({'error': 'Image not found'}), 404
+
+@app.route('/<filename>')
+def serve_image_root(filename):
+    """Serve images from root path (for backward compatibility)"""
+    # Check if it's an image file
+    if any(filename.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']):
+        return serve_image(filename)
+    else:
+        # Not an image, return 404
+        return jsonify({'error': 'File not found'}), 404
 
 @app.route('/api/images')
 def api_images():
