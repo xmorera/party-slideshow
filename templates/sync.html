@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔄 Dropbox Sync - SFC 30 Party</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .status-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .status-connected { background-color: #4CAF50; }
+        .status-disconnected { background-color: #f44336; }
+        .status-unknown { background-color: #ff9800; }
+        
+        .sync-button {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin: 10px;
+        }
+        
+        .sync-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .sync-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .force-sync-button {
+            background: linear-gradient(45deg, #ff9800, #f57c00);
+        }
+        
+        .back-button {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        
+        .log-area {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .nav-buttons {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            transition: background 0.3s;
+        }
+        
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-buttons">
+        <a href="/" class="nav-btn">🏠 Home</a>
+        <a href="/upload" class="nav-btn">📤 Upload</a>
+        <a href="/generate-dropbox-token" class="nav-btn">🔑 Token</a>
+    </div>
+
+    <div class="container">
+        <h1>🔄 Dropbox Sync</h1>
+        
+        <div class="status-card">
+            <h3>📊 Sync Status</h3>
+            <div id="connection-status">
+                <span class="status-indicator status-unknown"></span>
+                Checking connection...
+            </div>
+            <div id="sync-info" style="margin-top: 10px;">
+                Loading sync information...
+            </div>
+        </div>
+        
+        <div class="status-card">
+            <h3>🖼️ Images</h3>
+            <div id="images-info">
+                Loading image count...
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <button id="sync-button" class="sync-button" onclick="startSync(false)">
+                🔄 Sync Now
+            </button>
+            <button id="force-sync-button" class="sync-button force-sync-button" onclick="startSync(true)">
+                ⚡ Force Sync
+            </button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div>Syncing with Dropbox...</div>
+        </div>
+        
+        <div class="log-area" id="log-area" style="display: none;">
+            <h4>📝 Sync Log</h4>
+            <div id="log-content"></div>
+        </div>
+    </div>
+
+    <script>
+        let statusInterval;
+        
+        // Load initial status
+        loadSyncStatus();
+        
+        // Update status every 10 seconds
+        statusInterval = setInterval(loadSyncStatus, 10000);
+        
+        async function loadSyncStatus() {
+            try {
+                const response = await fetch('/sync-status');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    updateConnectionStatus(data.dropbox_connected, data.user_info);
+                    updateSyncInfo(data);
+                    updateImagesInfo(data.local_images_count);
+                    updateSyncButtons(data.can_sync_now);
+                } else {
+                    updateConnectionStatus(false, null);
+                    logMessage('❌ Failed to load sync status: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error loading sync status:', error);
+                updateConnectionStatus(false, null);
+            }
+        }
+        
+        function updateConnectionStatus(connected, userInfo) {
+            const statusEl = document.getElementById('connection-status');
+            
+            if (connected && userInfo) {
+                statusEl.innerHTML = `
+                    <span class="status-indicator status-connected"></span>
+                    Connected to Dropbox as <strong>${userInfo.name}</strong> (${userInfo.email})
+                `;
+            } else if (connected) {
+                statusEl.innerHTML = `
+                    <span class="status-indicator status-connected"></span>
+                    Connected to Dropbox
+                `;
+            } else {
+                statusEl.innerHTML = `
+                    <span class="status-indicator status-disconnected"></span>
+                    Not connected to Dropbox
+                `;
+            }
+        }
+        
+        function updateSyncInfo(data) {
+            const syncInfoEl = document.getElementById('sync-info');
+            let html = '';
+            
+            if (data.last_sync_seconds_ago !== null) {
+                const minutes = Math.floor(data.last_sync_seconds_ago / 60);
+                const seconds = data.last_sync_seconds_ago % 60;
+                
+                if (minutes > 0) {
+                    html += `Last sync: ${minutes}m ${seconds}s ago<br>`;
+                } else {
+                    html += `Last sync: ${seconds}s ago<br>`;
+                }
+            } else {
+                html += 'No sync performed yet<br>';
+            }
+            
+            const cooldownMinutes = Math.floor(data.sync_cooldown_seconds / 60);
+            html += `Sync cooldown: ${cooldownMinutes} minutes<br>`;
+            
+            if (data.can_sync_now) {
+                html += '<span style="color: #4CAF50;">✅ Ready to sync</span>';
+            } else {
+                const remaining = data.sync_cooldown_seconds - data.last_sync_seconds_ago;
+                html += `<span style="color: #ff9800;">⏳ Cooldown active (${remaining}s remaining)</span>`;
+            }
+            
+            syncInfoEl.innerHTML = html;
+        }
+        
+        function updateImagesInfo(count) {
+            const imagesInfoEl = document.getElementById('images-info');
+            imagesInfoEl.innerHTML = `📸 ${count} images in local gallery`;
+        }
+        
+        function updateSyncButtons(canSync) {
+            const syncButton = document.getElementById('sync-button');
+            const forceSyncButton = document.getElementById('force-sync-button');
+            
+            syncButton.disabled = !canSync;
+            syncButton.textContent = canSync ? '🔄 Sync Now' : '⏳ Cooldown Active';
+        }
+        
+        async function startSync(force = false) {
+            const loading = document.getElementById('loading');
+            const logArea = document.getElementById('log-area');
+            const logContent = document.getElementById('log-content');
+            const syncButton = document.getElementById('sync-button');
+            const forceSyncButton = document.getElementById('force-sync-button');
+            
+            // Show loading and disable buttons
+            loading.style.display = 'block';
+            logArea.style.display = 'block';
+            syncButton.disabled = true;
+            forceSyncButton.disabled = true;
+            
+            // Clear previous log
+            logContent.innerHTML = '';
+            
+            logMessage('🚀 Starting Dropbox sync...');
+            
+            try {
+                const response = await fetch('/sync-dropbox-manual', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ force: force })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    logMessage('✅ Sync completed successfully!');
+                    logMessage(`📸 ${data.images_count} images now in gallery`);
+                } else if (data.status === 'cooldown') {
+                    logMessage('⏳ ' + data.message);
+                } else {
+                    logMessage('❌ Sync failed: ' + data.message);
+                }
+                
+            } catch (error) {
+                logMessage('❌ Sync error: ' + error.message);
+            } finally {
+                // Hide loading and refresh status
+                loading.style.display = 'none';
+                syncButton.disabled = false;
+                forceSyncButton.disabled = false;
+                
+                // Refresh status after sync
+                setTimeout(loadSyncStatus, 1000);
+            }
+        }
+        
+        function logMessage(message) {
+            const logContent = document.getElementById('log-content');
+            const timestamp = new Date().toLocaleTimeString();
+            logContent.innerHTML += `[${timestamp}] ${message}<br>`;
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+        
+        // Cleanup interval when page is unloaded
+        window.addEventListener('beforeunload', () => {
+            if (statusInterval) {
+                clearInterval(statusInterval);
+            }
+        });
+    </script>
+</body>
+</html>

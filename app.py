@@ -525,30 +525,10 @@ SYNC_COOLDOWN = 300  # 5 minutes between syncs
 
 @app.route('/')
 def main():
-    global LAST_SYNC_TIME
+    """Main page - just serve images without any Dropbox operations"""
+    print("=== Loading main page (no Dropbox sync) ===")
     
-    # Guard clause: Test Dropbox connection on startup (only if needed)
-    if not test_dropbox_token():
-        print("WARNING: Dropbox token test failed on startup")
-        print("App will continue but Dropbox features may not work")
-        print("To fix: Run generate_refresh_token.py to get a valid refresh token")
-    
-    # Smart sync: Only sync if enough time has passed since last sync
-    current_time = time.time()
-    if current_time - LAST_SYNC_TIME > SYNC_COOLDOWN:
-        print(f"=== Auto-sync triggered (last sync was {int(current_time - LAST_SYNC_TIME)} seconds ago) ===")
-        try:
-            if sync_dropbox_images():
-                LAST_SYNC_TIME = current_time
-                print("=== Auto-sync completed successfully ===")
-            else:
-                print("=== Auto-sync failed ===")
-        except Exception as e:
-            print(f"Auto-sync error: {e}")
-    else:
-        time_until_next_sync = int(SYNC_COOLDOWN - (current_time - LAST_SYNC_TIME))
-        print(f"Skipping sync (cooldown active, next sync in {time_until_next_sync} seconds)")
-    
+    # Just get images from local folder - no Dropbox operations
     images = get_images()
     
     # Prepare data for template
@@ -581,19 +561,8 @@ def main():
                 })
         carousel_images = formatted_carousel
     
+    print(f"Serving {len(images)} images from local cache")
     return render_template('index.html', main_image=main_image, carousel_images=carousel_images)
-
-@app.route('/sync-dropbox')
-def sync_dropbox():
-    """Manual Dropbox sync endpoint"""
-    try:
-        success = sync_dropbox_images()
-        if success:
-            return jsonify({'status': 'success', 'message': 'Dropbox sync completed successfully'})
-        else:
-            return jsonify({'status': 'error', 'message': 'Dropbox sync failed'}), 500
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': f'Dropbox sync error: {str(e)}'}), 500
 
 @app.route('/images/<filename>')
 def serve_image(filename):
@@ -1033,6 +1002,101 @@ def force_sync():
             return jsonify({'status': 'error', 'message': 'Manual sync failed'}), 500
     except Exception as e:
         return jsonify({'status': 'error', 'message': f'Manual sync error: {str(e)}'}), 500
+
+@app.route('/sync')
+def sync_page():
+    """Dedicated sync page for Dropbox operations"""
+    return render_template('sync.html')
+
+@app.route('/sync-status')
+def sync_status():
+    """Get current sync status and statistics"""
+    try:
+        # Check Dropbox connection without syncing
+        dbx = get_dropbox_client_with_retry()
+        dropbox_connected = dbx is not None
+        
+        if dropbox_connected:
+            try:
+                account = dbx.users_get_current_account()
+                user_info = {
+                    'name': account.name.display_name,
+                    'email': account.email
+                }
+            except:
+                user_info = None
+        else:
+            user_info = None
+        
+        # Get local image count
+        local_images = get_images()
+        
+        # Get last sync time
+        global LAST_SYNC_TIME
+        time_since_last_sync = int(time.time() - LAST_SYNC_TIME) if LAST_SYNC_TIME > 0 else None
+        
+        return jsonify({
+            'status': 'success',
+            'dropbox_connected': dropbox_connected,
+            'user_info': user_info,
+            'local_images_count': len(local_images),
+            'last_sync_seconds_ago': time_since_last_sync,
+            'sync_cooldown_seconds': SYNC_COOLDOWN,
+            'can_sync_now': time_since_last_sync is None or time_since_last_sync > SYNC_COOLDOWN
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        })
+
+@app.route('/sync-dropbox-manual', methods=['POST'])
+def sync_dropbox_manual():
+    """Manual Dropbox sync with detailed progress"""
+    global LAST_SYNC_TIME
+    
+    try:
+        print("=== Manual Dropbox sync started ===")
+        
+        # Check if we can sync (respect cooldown for manual syncs too, but allow override)
+        current_time = time.time()
+        time_since_last = current_time - LAST_SYNC_TIME if LAST_SYNC_TIME > 0 else SYNC_COOLDOWN + 1
+        
+        force_sync = request.json.get('force', False) if request.is_json else False
+        
+        if time_since_last < SYNC_COOLDOWN and not force_sync:
+            return jsonify({
+                'status': 'cooldown',
+                'message': f'Sync on cooldown. Wait {int(SYNC_COOLDOWN - time_since_last)} more seconds or use force=true',
+                'seconds_remaining': int(SYNC_COOLDOWN - time_since_last)
+            })
+        
+        # Perform the sync
+        success = sync_dropbox_images()
+        
+        if success:
+            LAST_SYNC_TIME = current_time
+            # Get updated image count
+            images = get_images()
+            return jsonify({
+                'status': 'success',
+                'message': 'Dropbox sync completed successfully',
+                'images_count': len(images),
+                'sync_time': current_time
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Dropbox sync failed'
+            }), 500
+            
+    except Exception as e:
+        print(f"ERROR: Manual sync failed: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Sync error: {str(e)}'
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
