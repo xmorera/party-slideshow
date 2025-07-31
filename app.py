@@ -499,11 +499,10 @@ def get_images():
         images = []
         for filename in os.listdir(IMAGE_FOLDER):
             if any(filename.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']):
-                # Return the full URL path that matches your route
-                image_url = f"/images/{filename}"
+                # Return objects with filename and URL
                 images.append({
                     'filename': filename,
-                    'url': image_url,
+                    'url': f"/images/{filename}",
                     'path': os.path.join(IMAGE_FOLDER, filename)
                 })
         
@@ -551,11 +550,36 @@ def main():
         print(f"Skipping sync (cooldown active, next sync in {time_until_next_sync} seconds)")
     
     images = get_images()
-    if not images:
-        return render_template('index.html', main_image=None, carousel_images=[])
     
-    main_image = images[0]
-    carousel_images = images[1:] if len(images) > 1 else []
+    # Prepare data for template
+    main_image = None
+    carousel_images = []
+    
+    if images:
+        # Extract first image for main display
+        if isinstance(images[0], dict):
+            main_image = images[0]
+        else:
+            # If it's a string, create object
+            main_image = {
+                'filename': images[0],
+                'url': f"/images/{images[0]}"
+            }
+        
+        # Extract remaining images for carousel
+        carousel_images = images[1:] if len(images) > 1 else []
+        
+        # Ensure carousel images are in the right format
+        formatted_carousel = []
+        for img in carousel_images:
+            if isinstance(img, dict):
+                formatted_carousel.append(img)
+            else:
+                formatted_carousel.append({
+                    'filename': img,
+                    'url': f"/images/{img}"
+                })
+        carousel_images = formatted_carousel
     
     return render_template('index.html', main_image=main_image, carousel_images=carousel_images)
 
@@ -598,12 +622,34 @@ def serve_image_root(filename):
 
 @app.route('/api/images')
 def api_images():
-    images = get_images()
-    return jsonify({
-        'images': images,
-        'count': len(images)
-    })
-
+    """API endpoint to get images as JSON"""
+    try:
+        images = get_images()
+        
+        # Extract just the URLs for the frontend
+        image_urls = []
+        for image in images:
+            if isinstance(image, dict) and 'url' in image:
+                image_urls.append(image['url'])
+            elif isinstance(image, str):
+                # If it's already a string, assume it's the filename and create URL
+                image_urls.append(f"/images/{image}")
+            else:
+                # Fallback - treat as filename
+                image_urls.append(f"/images/{str(image)}")
+        
+        return jsonify({
+            'images': image_urls,
+            'count': len(image_urls)
+        })
+        
+    except Exception as e:
+        print(f"ERROR: Failed to get images via API: {e}")
+        return jsonify({
+            'images': [],
+            'count': 0,
+            'error': str(e)
+        }), 500
 @app.route('/media/<filename>')
 def serve_media(filename):
     media_folder = os.path.join(os.path.dirname(__file__), 'media')
