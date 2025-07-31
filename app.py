@@ -91,26 +91,51 @@ def get_dropbox_client():
     try:
         print("=== Creating Dropbox client ===")
         
-        # Check for refresh token first (recommended approach)
+        # Always prioritize refresh token approach (recommended)
         refresh_token = os.environ.get('DROPBOX_REFRESH_TOKEN')
         app_key = os.environ.get('APPKEY', 'your_new_app_key_here')
         app_secret = os.environ.get('APPSECRET', 'your_new_app_secret_here')
         
+        # If we have refresh token and app credentials, use them directly
         if refresh_token and app_key != 'your_new_app_key_here' and app_secret != 'your_new_app_secret_here':
-            print("Using refresh token for authentication...")
+            print("Using refresh token for authentication (recommended approach)...")
             try:
+                # Create client with refresh token - this will auto-refresh if needed
                 dbx = dropbox.Dropbox(
                     oauth2_refresh_token=refresh_token,
                     app_key=app_key,
                     app_secret=app_secret
                 )
-                print("SUCCESS: Dropbox client created with refresh token")
-                return dbx
+                
+                # Test the connection to ensure it works
+                try:
+                    account = dbx.users_get_current_account()
+                    print(f"SUCCESS: Dropbox client created with refresh token - Connected as {account.name.display_name}")
+                    
+                    # Update the access token in environment for other parts of the app
+                    current_token = dbx._oauth2_access_token
+                    if current_token:
+                        update_env_variable('DROPBOX_ACCESS_TOKEN', current_token)
+                        print("Updated DROPBOX_ACCESS_TOKEN with fresh token from refresh")
+                    
+                    return dbx
+                    
+                except dropbox.exceptions.AuthError as auth_error:
+                    print(f"Auth error with refresh token: {auth_error}")
+                    # If refresh token fails, fall through to access token method
+                    pass
+                except Exception as test_error:
+                    print(f"Connection test failed with refresh token: {test_error}")
+                    # If connection test fails, fall through to access token method
+                    pass
+                    
             except Exception as e:
                 print(f"Failed to create client with refresh token: {e}")
                 # Fall back to access token if refresh token fails
+        else:
+            print("Missing refresh token or app credentials, falling back to access token...")
         
-        # Fall back to access token (legacy approach)
+        # Fall back to access token (legacy approach) - but with auto-refresh capability
         access_token = os.environ.get('DROPBOX_ACCESS_TOKEN')
         print(f"Access token from environment: {'YES' if access_token else 'NO'}")
         
@@ -134,9 +159,52 @@ def get_dropbox_client():
         
         print("Creating Dropbox client with access token...")
         dbx = dropbox.Dropbox(access_token)
-        print("SUCCESS: Dropbox client created with access token")
         
-        return dbx
+        # Test the access token - if expired, try to refresh
+        try:
+            account = dbx.users_get_current_account()
+            print(f"SUCCESS: Dropbox client created with access token - Connected as {account.name.display_name}")
+            return dbx
+            
+        except dropbox.exceptions.AuthError as auth_error:
+            print(f"Authentication error with access token: {auth_error}")
+            
+            if 'expired_access_token' in str(auth_error):
+                print("Access token expired - attempting to refresh using refresh token...")
+                
+                # Try to refresh the access token
+                if refresh_token and app_key != 'your_new_app_key_here' and app_secret != 'your_new_app_secret_here':
+                    new_access_token = refresh_access_token(refresh_token, app_key, app_secret)
+                    
+                    if new_access_token:
+                        print("Creating new Dropbox client with refreshed access token...")
+                        try:
+                            # Create new client with refreshed token
+                            new_dbx = dropbox.Dropbox(new_access_token)
+                            # Test the new connection
+                            account = new_dbx.users_get_current_account()
+                            print(f"SUCCESS: Refreshed access token works - Connected as {account.name.display_name}")
+                            
+                            # Update environment variable with new token
+                            update_env_variable('DROPBOX_ACCESS_TOKEN', new_access_token)
+                            print("Updated DROPBOX_ACCESS_TOKEN environment variable")
+                            
+                            return new_dbx
+                        except Exception as e:
+                            print(f"Failed to create client with refreshed access token: {e}")
+                    else:
+                        print("Failed to refresh access token")
+                else:
+                    print("Cannot refresh access token - missing refresh token or app credentials")
+                    print("Please run generate_refresh_token.py to get a refresh token")
+            
+            print("Authentication failed and could not recover")
+            return None
+            
+        except Exception as e:
+            print(f"Error testing Dropbox connection: {e}")
+            return None
+        
     except Exception as e:
         print(f"ERROR creating Dropbox client: {e}")
         import traceback
@@ -147,8 +215,12 @@ def refresh_access_token(refresh_token, app_key, app_secret):
     """Refresh an expired access token using the refresh token"""
     try:
         print("=== Refreshing access token ===")
+        print(f"Using refresh token: {refresh_token[:20]}...")
+        print(f"Using app key: {app_key}")
+        
         import requests
         
+        # Make the token refresh request
         response = requests.post('https://api.dropboxapi.com/oauth2/token', data={
             'grant_type': 'refresh_token',
             'refresh_token': refresh_token,
@@ -156,75 +228,64 @@ def refresh_access_token(refresh_token, app_key, app_secret):
             'client_secret': app_secret
         })
         
+        print(f"Token refresh response status: {response.status_code}")
+        
         if response.status_code == 200:
             token_data = response.json()
-            new_access_token = token_data['access_token']
-            print(f"SUCCESS: New access token generated: {new_access_token[:10]}...")
+            new_access_token = token_data.get('access_token')
             
-            # Update the token file if it exists
-            token_file = os.path.join(os.path.dirname(__file__), 'dropbox-token.txt')
-            if os.path.exists(token_file):
-                with open(token_file, 'w') as f:
-                    f.write(new_access_token)
-                print("Updated token file with new access token")
-            
-            return new_access_token
+            if new_access_token:
+                print(f"SUCCESS: New access token generated: {new_access_token[:10]}...")
+                
+                # Update the token file if it exists
+                token_file = os.path.join(os.path.dirname(__file__), 'dropbox-token.txt')
+                try:
+                    with open(token_file, 'w') as f:
+                        f.write(new_access_token)
+                    print("Updated token file with new access token")
+                except Exception as file_error:
+                    print(f"Could not update token file: {file_error}")
+                
+                return new_access_token
+            else:
+                print("ERROR: No access token in response")
+                print(f"Response data: {token_data}")
+                return None
         else:
             print(f"Failed to refresh token: Status {response.status_code}")
             print(f"Response: {response.text}")
+            
+            # Parse error details if available
+            try:
+                error_data = response.json()
+                if 'error_description' in error_data:
+                    print(f"Error description: {error_data['error_description']}")
+                if 'error' in error_data:
+                    print(f"Error type: {error_data['error']}")
+            except:
+                pass
+                
             return None
+            
     except Exception as e:
         print(f"Error refreshing token: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
         return None
 
 def get_dropbox_client_with_retry():
     """Get Dropbox client with automatic token refresh on expiration"""
     try:
-        # First attempt - try with existing tokens
-        dbx = get_dropbox_client()
-        if not dbx:
-            return None
+        print("=== Getting Dropbox client with retry capability ===")
         
-        # Test the connection to see if token is valid
-        try:
-            account = dbx.users_get_current_account()
-            print(f"Token is valid - Connected as {account.name.display_name}")
+        # The main get_dropbox_client() function now handles all retry logic
+        dbx = get_dropbox_client()
+        
+        if dbx:
+            print("SUCCESS: Dropbox client obtained successfully")
             return dbx
-        except dropbox.exceptions.AuthError as auth_error:
-            print(f"Authentication error: {auth_error}")
-            
-            # Check if it's an expired token error
-            if 'expired_access_token' in str(auth_error):
-                print("Access token has expired - attempting to refresh...")
-                
-                # Try to refresh the token
-                refresh_token = os.environ.get('DROPBOX_REFRESH_TOKEN')
-                app_key = os.environ.get('APPKEY', 'your_new_app_key_here')
-                app_secret = os.environ.get('APPSECRET', 'your_new_app_secret_here')
-                
-                if refresh_token and app_key != 'your_new_app_key_here' and app_secret != 'your_new_app_secret_here':
-                    new_access_token = refresh_access_token(refresh_token, app_key, app_secret)
-                    
-                    if new_access_token:
-                        print("Creating new Dropbox client with refreshed token...")
-                        try:
-                            # Create new client with refreshed token
-                            new_dbx = dropbox.Dropbox(new_access_token)
-                            # Test the new connection
-                            account = new_dbx.users_get_current_account()
-                            print(f"SUCCESS: Refreshed token works - Connected as {account.name.display_name}")
-                            return new_dbx
-                        except Exception as e:
-                            print(f"Failed to create client with refreshed token: {e}")
-                    else:
-                        print("Failed to refresh access token")
-                else:
-                    print("Cannot refresh token - missing refresh token or app credentials")
-                    print("Please run generate_refresh_token.py to get a refresh token")
-            
-            return None
-        except Exception as e:
-            print(f"Error testing Dropbox connection: {e}")
+        else:
+            print("ERROR: Could not obtain Dropbox client after retry attempts")
             return None
             
     except Exception as e:
@@ -762,5 +823,47 @@ def update_access_token():
         print(f"ERROR: Update access token failed: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+@app.route('/test-refresh-token')
+def test_refresh_token():
+    """Test endpoint to verify refresh token functionality"""
+    try:
+        refresh_token = os.environ.get('DROPBOX_REFRESH_TOKEN')
+        app_key = os.environ.get('APPKEY')
+        app_secret = os.environ.get('APPSECRET')
+        
+        if not all([refresh_token, app_key, app_secret]):
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing refresh token or app credentials',
+                'refresh_token': 'YES' if refresh_token else 'NO',
+                'app_key': 'YES' if app_key else 'NO',
+                'app_secret': 'YES' if app_secret else 'NO'
+            })
+        
+        # Test refresh token by getting a new access token
+        new_access_token = refresh_access_token(refresh_token, app_key, app_secret)
+        
+        if new_access_token:
+            # Test the new access token
+            test_dbx = dropbox.Dropbox(new_access_token)
+            account = test_dbx.users_get_current_account()
+            
+            return jsonify({
+                'status': 'success',
+                'message': 'Refresh token is working properly',
+                'user_name': account.name.display_name,
+                'user_email': account.email,
+                'new_token_preview': new_access_token[:20] + '...'
+            })
+        else:
+            return jsonify({
+                'status': 'error',  
+                'message': 'Failed to refresh access token',
+                'refresh_token_preview': refresh_token[:20] + '...' if refresh_token else 'None'
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Test failed: {str(e)}'
+        })
