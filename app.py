@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template, send_from_directory, request, redirect, url_for, flash
+from flask import Flask, jsonify, render_template, send_from_directory, request, redirect, url_for, flash, abort
 import os
 import random
 from werkzeug.utils import secure_filename
@@ -572,16 +572,11 @@ def main():
 def serve_image(filename):
     """Serve images from the images folder"""
     try:
+        # Use the IMAGE_FOLDER variable that's already defined
         return send_from_directory(IMAGE_FOLDER, filename)
-    except FileNotFoundError:
-        # If image not found, try to sync and then serve
-        print(f"Image not found: {filename}, attempting sync...")
-        sync_dropbox_images()
-        try:
-            return send_from_directory(IMAGE_FOLDER, filename)
-        except FileNotFoundError:
-            # Return a placeholder or 404
-            return jsonify({'error': 'Image not found'}), 404
+    except Exception as e:
+        print(f"ERROR: Failed to serve image {filename}: {e}")
+        abort(404)
 
 @app.route('/<filename>')
 def serve_image_root(filename):

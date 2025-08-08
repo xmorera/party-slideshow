@@ -351,10 +351,10 @@
 
     <!-- Speed Controls -->
     <div class="speed-controls">
-        <div class="speed-btn" onclick="setSpeed(60)" title="Slow">🐌</div>
-        <div class="speed-btn active" onclick="setSpeed(30)" title="Normal">⚡</div>
-        <div class="speed-btn" onclick="setSpeed(15)" title="Fast">🚀</div>
-        <div class="speed-btn" onclick="setSpeed(8)" title="Lightning">⚡⚡</div>
+        <div class="speed-btn" onclick="setSpeed(60, event)" title="Slow">🐌</div>
+        <div class="speed-btn active" onclick="setSpeed(30, event)" title="Normal">⚡</div>
+        <div class="speed-btn" onclick="setSpeed(15, event)" title="Fast">🚀</div>
+        <div class="speed-btn" onclick="setSpeed(8, event)" title="Lightning">⚡⚡</div>
     </div>
 
     <!-- Infinite Carousel -->
@@ -457,14 +457,27 @@
             setSpeed(currentSpeed);
         }
 
-        function setSpeed(seconds) {
+        function setSpeed(seconds, event = null) {
             currentSpeed = seconds;
             const wrapper = document.getElementById('carousel-wrapper');
             wrapper.style.animationDuration = `${seconds}s`;
             
             // Update active speed button
             document.querySelectorAll('.speed-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            
+            if (event && event.target) {
+                // If called from button click, mark that button as active
+                event.target.classList.add('active');
+            } else {
+                // If called from keyboard or other source, find the correct button
+                const speedButtons = document.querySelectorAll('.speed-btn');
+                speedButtons.forEach((btn, index) => {
+                    const speeds = [60, 30, 15, 8]; // Match the onclick values in HTML
+                    if (speeds[index] === seconds) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
         }
 
         function togglePause() {
