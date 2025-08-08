@@ -422,7 +422,7 @@
         <!-- Action Buttons -->
         <div class="action-buttons">
             <a href="/upload" class="action-btn">📸 Upload Photos</a>
-            <button onclick="syncDropbox()" class="action-btn secondary">☁️ Sync Dropbox</button>
+            <a href="/sync" class="action-btn secondary">🔄 Manage Sync</a>
         </div>
     </div>
 
@@ -776,21 +776,9 @@
             new InfiniteCarousel();
         });
 
-        // Sync Dropbox function
-        async function syncDropbox() {
-            try {
-                const response = await fetch('/sync-dropbox');
-                const result = await response.json();
-                
-                if (result.status === 'success') {
-                    alert(`Sync successful! ${result.message}`);
-                    location.reload(); // Reload to show new images
-                } else {
-                    alert(`Sync failed: ${result.message}`);
-                }
-            } catch (error) {
-                alert(`Sync error: ${error.message}`);
-            }
+        // Redirect to sync page instead of trying to sync here
+        function syncDropbox() {
+            window.location.href = '/sync';
         }
 
         // Also initialize if the script runs after DOM is ready
