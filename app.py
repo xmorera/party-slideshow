@@ -572,7 +572,6 @@ def main():
 def serve_image(filename):
     """Serve images from the images folder"""
     try:
-        # Use the IMAGE_FOLDER variable that's already defined
         return send_from_directory(IMAGE_FOLDER, filename)
     except Exception as e:
         print(f"ERROR: Failed to serve image {filename}: {e}")

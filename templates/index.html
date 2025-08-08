@@ -117,6 +117,10 @@
             transition: all 0.3s ease;
             position: relative;
             border: 2px solid rgba(255, 255, 255, 0.1);
+            min-height: 200px; /* Ensure minimum height */
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .grid-item:hover {
@@ -503,26 +507,53 @@
         function createPhotoGrid() {
             const grid = document.getElementById('photo-grid');
             grid.innerHTML = '';
+            
+            console.log('Creating grid with', images.length, 'images');
+            console.log('Images array:', images);
+
+            if (images.length === 0) {
+                console.log('No images to display');
+                return;
+            }
 
             // Create multiple copies for infinite scroll
             const totalCopies = Math.max(3, Math.ceil(20 / images.length));
+            console.log('Creating', totalCopies, 'copies of images');
             
+            let itemCount = 0;
             for (let copy = 0; copy < totalCopies; copy++) {
                 images.forEach((imageUrl, index) => {
                     const gridItem = document.createElement('div');
                     gridItem.className = 'grid-item';
                     gridItem.onclick = () => openImagePopup(imageUrl, index + 1);
                     
+                    // Add debug info
+                    gridItem.style.background = 'rgba(0, 255, 0, 0.3)';
+                    gridItem.innerHTML = `<div style="color: white; text-align: center;">Image ${itemCount + 1}<br>Loading...</div>`;
+                    
                     const img = document.createElement('img');
                     img.src = imageUrl;
                     img.alt = `Party Image ${index + 1}`;
                     img.loading = 'lazy';
                     
+                    // Debug image loading
+                    img.onload = () => {
+                        console.log('Image loaded successfully:', imageUrl);
+                        gridItem.innerHTML = ''; // Clear debug text
+                    };
+                    
+                    img.onerror = () => {
+                        console.error('Image failed to load:', imageUrl);
+                        gridItem.innerHTML = `<div style="color: red; text-align: center;">Failed to load<br>${imageUrl}</div>`;
+                    };
+                    
                     gridItem.appendChild(img);
                     grid.appendChild(gridItem);
+                    itemCount++;
                 });
             }
-
+            
+            console.log('Total grid items created:', itemCount);
             setSpeed(currentSpeed);
         }
 
