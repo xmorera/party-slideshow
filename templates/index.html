@@ -129,7 +129,7 @@
         .carousel-track {
             display: flex;
             height: 100%;
-            animation: slideShow 20s linear infinite;
+            animation: slideShow 60s linear infinite;
             gap: 20px;
         }
 
@@ -405,10 +405,10 @@
 
     <!-- Speed Controls -->
     <div class="speed-controls">
-        <div class="speed-btn" onclick="setSpeed(60, event)" title="Slow">🐌</div>
-        <div class="speed-btn active" onclick="setSpeed(20, event)" title="Normal">⚡</div>
-        <div class="speed-btn" onclick="setSpeed(10, event)" title="Fast">🚀</div>
-        <div class="speed-btn" onclick="setSpeed(5, event)" title="Lightning">⚡⚡</div>
+        <div class="speed-btn" onclick="setImageViewTime(8, event)" title="8 seconds per image">8s</div>
+        <div class="speed-btn active" onclick="setImageViewTime(5, event)" title="5 seconds per image">5s</div>
+        <div class="speed-btn" onclick="setImageViewTime(3, event)" title="3 seconds per image">3s</div>
+        <div class="speed-btn" onclick="setImageViewTime(2, event)" title="2 seconds per image">2s</div>
     </div>
 
     <!-- Carousel -->
@@ -452,7 +452,7 @@
 
     <script>
         let images = [];
-        let currentSpeed = 20;
+        let currentImageViewTime = 5; // seconds each image stays on screen
         let isPaused = false;
         let isReversed = false;
         let manualNavigationTimeout;
@@ -614,16 +614,30 @@
             
             console.log('Total carousel items created:', itemCount);
             
-            // Start animation
-            setSpeed(currentSpeed);
+            // Start animation with current view time
+            setImageViewTime(currentImageViewTime);
         }
 
-        function setSpeed(seconds, event = null) {
-            currentSpeed = seconds;
+        function setImageViewTime(seconds, event = null) {
+            currentImageViewTime = seconds;
             const track = document.getElementById('carousel-track');
-            if (track) {
-                track.style.animationDuration = `${seconds}s`;
-                console.log(`Animation speed set to ${seconds}s`);
+            
+            if (track && images.length > 0) {
+                // Calculate total animation duration based on:
+                // - Each image should be visible for 'seconds' time
+                // - Screen width determines how many images are visible at once
+                // - We need to account for the infinite scroll setup
+                
+                const screenWidth = window.innerWidth;
+                const imageWidth = 320; // 300px + 20px gap
+                const visibleImages = Math.ceil(screenWidth / imageWidth) + 1; // +1 for smooth scrolling
+                
+                // Total cycle time = (number of unique images * seconds per image)
+                const totalImages = images.length;
+                const totalDuration = totalImages * seconds;
+                
+                track.style.animationDuration = `${totalDuration}s`;
+                console.log(`Each image visible for ${seconds}s, total cycle: ${totalDuration}s`);
             }
             
             // Update active speed button
@@ -634,8 +648,8 @@
             } else {
                 const speedButtons = document.querySelectorAll('.speed-btn');
                 speedButtons.forEach((btn, index) => {
-                    const speeds = [60, 20, 10, 5];
-                    if (speeds[index] === seconds) {
+                    const viewTimes = [8, 5, 3, 2]; // seconds per image
+                    if (viewTimes[index] === seconds) {
                         btn.classList.add('active');
                     }
                 });
@@ -824,16 +838,16 @@
                     refreshImages();
                     break;
                 case '1':
-                    setSpeed(60);
+                    setImageViewTime(8);
                     break;
                 case '2':
-                    setSpeed(20);
+                    setImageViewTime(5);
                     break;
                 case '3':
-                    setSpeed(10);
+                    setImageViewTime(3);
                     break;
                 case '4':
-                    setSpeed(5);
+                    setImageViewTime(2);
                     break;
             }
         });
@@ -856,6 +870,13 @@
                 track.style.animationPlayState = 'paused';
             } else if (!isPaused) {
                 track.style.animationPlayState = 'running';
+            }
+        });
+
+        // Handle window resize to recalculate timing
+        window.addEventListener('resize', () => {
+            if (images.length > 0) {
+                setImageViewTime(currentImageViewTime);
             }
         });
 
