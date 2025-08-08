@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SFC 30 - Party Slideshow</title>
+    <title>🎉 SFC 30 Party - Live Slideshow</title>
     <style>
         * {
             margin: 0;
@@ -12,39 +12,11 @@
         }
 
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            color: white;
-            overflow-x: hidden;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .main-title {
-            font-size: 3.5rem;
-            font-weight: bold;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-            background: linear-gradient(45deg, #FFD700, #FFA500);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .subtitle {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            margin-bottom: 20px;
+            overflow: hidden;
+            position: relative;
         }
 
         /* Navigation Buttons */
@@ -62,329 +34,308 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.3);
             color: white;
-            padding: 10px 15px;
+            padding: 12px 18px;
             border-radius: 25px;
             text-decoration: none;
             font-size: 14px;
+            font-weight: 500;
             transition: all 0.3s ease;
             cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
         .nav-btn:hover {
             background: rgba(255, 255, 255, 0.3);
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
         }
 
-        /* Carousel Styles */
+        /* Title Overlay */
+        .title-overlay {
+            position: fixed;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(15px);
+            padding: 20px 40px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .main-title {
+            font-size: 3em;
+            font-weight: bold;
+            background: linear-gradient(45deg, #FFD700, #FFA500, #FF6B6B);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.2em;
+            font-weight: 300;
+        }
+
+        /* Infinite Carousel Container */
         .carousel-container {
-            position: relative;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 70vh;
-            max-height: 600px;
-            margin: 20px auto;
+            height: 100vh;
             overflow: hidden;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            background: rgba(255, 255, 255, 0.1);
         }
 
         .carousel-wrapper {
             position: relative;
             width: 100%;
             height: 100%;
+            display: flex;
+            animation: infiniteSlide 30s linear infinite;
+        }
+
+        .carousel-item {
+            flex: 0 0 100vw;
+            height: 100vh;
+            position: relative;
             overflow: hidden;
         }
 
-        .carousel-track {
-            display: flex;
-            width: 100%;
-            height: 100%;
-            transition: transform 0.5s ease-in-out;
-        }
-
-        .carousel-slide {
-            min-width: 100%;
-            height: 100%;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .carousel-slide img {
+        .carousel-item img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             object-position: center;
+            filter: brightness(0.8) contrast(1.1);
+            transition: all 0.5s ease;
+        }
+
+        .carousel-item:hover img {
+            filter: brightness(1) contrast(1.2);
+            transform: scale(1.02);
+        }
+
+        /* Image Overlay Info */
+        .image-info {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            padding: 20px;
             border-radius: 15px;
+            color: white;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.5s ease;
         }
 
-        /* Navigation Buttons */
-        .carousel-btn {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(255, 255, 255, 0.9);
-            border: none;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            cursor: pointer;
-            z-index: 10;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            color: #333;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        .carousel-item:hover .image-info {
+            transform: translateY(0);
+            opacity: 1;
         }
 
-        .carousel-btn:hover {
-            background: rgba(255, 255, 255, 1);
-            transform: translateY(-50%) scale(1.1);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        .image-counter {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            z-index: 998;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .carousel-btn-prev {
-            left: 20px;
-        }
-
-        .carousel-btn-next {
-            right: 20px;
-        }
-
-        /* Dots Navigation */
-        .carousel-dots {
-            position: absolute;
-            bottom: 20px;
+        /* Pause/Play Controls */
+        .carousel-controls {
+            position: fixed;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 10px;
-            z-index: 10;
+            gap: 15px;
+            z-index: 998;
         }
 
-        .carousel-dot {
-            width: 12px;
-            height: 12px;
+        .control-btn {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 16px;
             border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.7);
-            background: transparent;
             cursor: pointer;
             transition: all 0.3s ease;
+            font-size: 16px;
         }
 
-        .carousel-dot.active {
-            background: rgba(255, 255, 255, 1);
-            border-color: rgba(255, 255, 255, 1);
-            transform: scale(1.2);
-        }
-
-        .carousel-dot:hover {
-            border-color: rgba(255, 255, 255, 1);
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
             transform: scale(1.1);
         }
 
-        /* Counter */
-        .carousel-counter {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 14px;
-            z-index: 10;
+        .control-btn:active {
+            transform: scale(0.95);
         }
 
-        /* Loading States */
-        .carousel-loading {
+        /* Animation Keyframes */
+        @keyframes infiniteSlide {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
+        .paused {
+            animation-play-state: paused !important;
+        }
+
+        /* Speed Controls */
+        .speed-controls {
+            position: fixed;
+            top: 150px;
+            right: 20px;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            gap: 5px;
+            z-index: 999;
+        }
+
+        .speed-btn {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .speed-btn.active {
+            background: rgba(255, 215, 0, 0.3);
+            border-color: rgba(255, 215, 0, 0.5);
+        }
+
+        .speed-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .nav-buttons {
+                position: fixed;
+                top: 10px;
+                left: 10px;
+                right: 10px;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .nav-btn {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            .title-overlay {
+                top: 80px;
+                left: 20px;
+                right: 20px;
+                transform: none;
+                padding: 15px 25px;
+            }
+
+            .main-title {
+                font-size: 2em;
+            }
+
+            .subtitle {
+                font-size: 1em;
+            }
+
+            .speed-controls {
+                top: 200px;
+                right: 10px;
+            }
+
+            .carousel-controls {
+                bottom: 20px;
+                gap: 10px;
+            }
+
+            .control-btn {
+                padding: 10px 12px;
+                font-size: 14px;
+            }
+
+            .image-counter {
+                bottom: 80px;
+                right: 20px;
+                font-size: 12px;
+                padding: 8px 15px;
+            }
+
+            .image-info {
+                bottom: 15px;
+                left: 15px;
+                right: 15px;
+                padding: 15px;
+            }
+        }
+
+        /* Loading State */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
             height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
             color: white;
         }
 
-        .loading-spinner {
-            width: 40px;
-            height: 40px;
+        .spinner {
             border: 4px solid rgba(255, 255, 255, 0.3);
             border-top: 4px solid white;
             border-radius: 50%;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
-        /* Message States */
-        .carousel-message {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: white;
-            text-align: center;
-            padding: 40px;
-        }
-
-        .carousel-message.error {
-            color: #ff6b6b;
-        }
-
-        .message-icon {
-            font-size: 60px;
-            margin-bottom: 20px;
-        }
-
-        .carousel-message h3 {
-            margin-bottom: 10px;
-            font-size: 24px;
-        }
-
-        .carousel-message p {
-            margin-bottom: 20px;
-            opacity: 0.8;
-        }
-
-        .upload-btn-msg, .reload-btn {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .upload-btn-msg:hover, .reload-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        /* Action Buttons */
-        .action-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 30px;
-        }
-
-        .action-btn {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 30px;
-            font-size: 16px;
-            font-weight: bold;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .action-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-        }
-
-        .action-btn.secondary {
-            background: linear-gradient(45deg, #FFA500, #FFD700);
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .main-title {
-                font-size: 2.5rem;
-            }
-            
-            .carousel-container {
-                height: 50vh;
-                margin: 10px;
-                border-radius: 10px;
-            }
-            
-            .carousel-btn {
-                width: 40px;
-                height: 40px;
-                font-size: 16px;
-            }
-            
-            .carousel-btn-prev {
-                left: 10px;
-            }
-            
-            .carousel-btn-next {
-                right: 10px;
-            }
-            
-            .carousel-dots {
-                bottom: 10px;
-                gap: 8px;
-            }
-            
-            .carousel-dot {
-                width: 10px;
-                height: 10px;
-            }
-            
-            .carousel-counter {
-                top: 10px;
-                right: 10px;
-                padding: 6px 12px;
-                font-size: 12px;
-            }
-
-            .nav-buttons {
-                position: relative;
-                top: auto;
-                right: auto;
-                justify-content: center;
-                margin-bottom: 20px;
-            }
-
-            .action-buttons {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .action-btn {
-                width: 200px;
-            }
-        }
-
-        /* Ensure no flash of unstyled content */
-        .carousel-container {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .main-image-container {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .main-image {
-            max-width: 100%;
-            height: auto;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
     </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+        <h2>Loading Party Photos...</h2>
+        <p>Getting the latest memories ready for you! 📸</p>
+    </div>
+
     <!-- Navigation Buttons -->
     <div class="nav-buttons">
         <a href="/upload" class="nav-btn" title="Upload new photos">
@@ -398,393 +349,242 @@
         </a>
     </div>
 
-    <div class="container">
-        <div class="header">
-            <h1 class="main-title">🎉 SFC 30 Party</h1>
-            <p class="subtitle">Share your moments and memories!</p>
-        </div>
+    <!-- Title Overlay -->
+    <div class="title-overlay">
+        <h1 class="main-title">🎉 SFC 30 Party</h1>
+        <p class="subtitle">Share your moments and memories!</p>
+    </div>
 
-        <!-- Main Image Container -->
-        <div class="main-image-container">
-            {% if main_image %}
-                <img src="{{ main_image.url }}" alt="{{ main_image.filename }}" class="main-image">
-            {% endif %}
-        </div>
+    <!-- Speed Controls -->
+    <div class="speed-controls">
+        <div class="speed-btn" onclick="setSpeed(60)" title="Slow">🐌</div>
+        <div class="speed-btn active" onclick="setSpeed(30)" title="Normal">⚡</div>
+        <div class="speed-btn" onclick="setSpeed(15)" title="Fast">🚀</div>
+        <div class="speed-btn" onclick="setSpeed(8)" title="Lightning">⚡⚡</div>
+    </div>
 
-        <!-- Carousel Container -->
-        <div id="carousel" class="carousel-container">
-            <div class="carousel-loading">
-                <div class="loading-spinner"></div>
-                <p>Loading slideshow...</p>
-            </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="action-buttons">
-            <a href="/upload" class="action-btn">📸 Upload Photos</a>
-            <a href="/sync" class="action-btn secondary">🔄 Manage Sync</a>
+    <!-- Infinite Carousel -->
+    <div class="carousel-container" id="carousel-container">
+        <div class="carousel-wrapper" id="carousel-wrapper">
+            <!-- Images will be dynamically loaded here -->
         </div>
     </div>
 
+    <!-- Carousel Controls -->
+    <div class="carousel-controls">
+        <button class="control-btn" onclick="togglePause()" id="pause-btn" title="Pause/Play">
+            ⏸️
+        </button>
+        <button class="control-btn" onclick="toggleDirection()" id="direction-btn" title="Reverse Direction">
+            🔄
+        </button>
+        <button class="control-btn" onclick="refreshImages()" title="Refresh Images">
+            🔃
+        </button>
+    </div>
+
+    <!-- Image Counter -->
+    <div class="image-counter" id="image-counter">
+        Loading images...
+    </div>
+
     <script>
-        class InfiniteCarousel {
-            constructor() {
-                this.currentIndex = 0;
-                this.images = [];
-                this.carousel = null;
-                this.slideInterval = null;
-                this.isTransitioning = false;
-                this.autoSlideDelay = 4000; // 4 seconds per image
+        let images = [];
+        let currentSpeed = 30;
+        let isPaused = false;
+        let isReversed = false;
+        let currentImageIndex = 0;
+
+        // Load images and start carousel
+        async function loadImages() {
+            try {
+                const response = await fetch('/api/images');
+                const data = await response.json();
                 
-                this.init();
-            }
-            
-            async init() {
-                console.log('Initializing infinite carousel...');
-                
-                // Create carousel container immediately
-                this.createCarouselContainer();
-                
-                // Load images and start carousel
-                await this.loadImages();
-                this.setupInfiniteLoop();
-                this.startAutoSlide();
-            }
-            
-            createCarouselContainer() {
-                // Find carousel container
-                this.carousel = document.getElementById('carousel');
-                if (!this.carousel) {
-                    console.error('Carousel container not found');
-                    return;
-                }
-                
-                // Add loading indicator
-                this.carousel.innerHTML = `
-                    <div class="carousel-loading">
-                        <div class="loading-spinner"></div>
-                        <p>Loading images...</p>
-                    </div>
-                `;
-            }
-            
-            async loadImages() {
-                try {
-                    console.log('Loading images...');
-                    const response = await fetch('/api/images');
-                    const data = await response.json();
-                    
-                    if (data.images && data.images.length > 0) {
-                        this.images = data.images;
-                        console.log(`Loaded ${this.images.length} images`);
-                        
-                        // Pre-load all images
-                        await this.preloadImages();
-                        this.renderCarousel();
-                    } else {
-                        this.showNoImagesMessage();
-                    }
-                } catch (error) {
-                    console.error('Error loading images:', error);
-                    this.showErrorMessage();
-                }
-            }
-            
-            async preloadImages() {
-                console.log('Pre-loading images...');
-                const imagePromises = this.images.map(imagePath => {
-                    return new Promise((resolve, reject) => {
-                        const img = new Image();
-                        img.onload = () => resolve(img);
-                        img.onerror = () => reject(new Error(`Failed to load: ${imagePath}`));
-                        img.src = imagePath;
-                    });
-                });
-                
-                try {
-                    await Promise.all(imagePromises);
-                    console.log('All images pre-loaded successfully');
-                } catch (error) {
-                    console.warn('Some images failed to load:', error);
-                }
-            }
-            
-            renderCarousel() {
-                if (this.images.length === 0) {
-                    this.showNoImagesMessage();
-                    return;
-                }
-                
-                // Create infinite loop by duplicating images
-                const infiniteImages = this.createInfiniteImageArray();
-                
-                // Create carousel HTML
-                const carouselHTML = `
-                    <div class="carousel-wrapper">
-                        <div class="carousel-track" id="carousel-track">
-                            ${infiniteImages.map((image, index) => `
-                                <div class="carousel-slide" data-index="${index}">
-                                    <img src="${image}" alt="Party Image ${index + 1}" loading="eager">
-                                </div>
-                            `).join('')}
-                        </div>
-                        
-                        <!-- Navigation arrows -->
-                        <button class="carousel-btn carousel-btn-prev" id="prevBtn">
-                            <span>❮</span>
-                        </button>
-                        <button class="carousel-btn carousel-btn-next" id="nextBtn">
-                            <span>❯</span>
-                        </button>
-                        
-                        <!-- Dots indicator -->
-                        <div class="carousel-dots">
-                            ${this.images.map((_, index) => `
-                                <button class="carousel-dot" data-index="${index}"></button>
-                            `).join('')}
-                        </div>
-                        
-                        <!-- Image counter -->
-                        <div class="carousel-counter">
-                            <span id="current-image">1</span> / <span id="total-images">${this.images.length}</span>
-                        </div>
-                    </div>
-                `;
-                
-                this.carousel.innerHTML = carouselHTML;
-                
-                // Setup event listeners
-                this.setupEventListeners();
-                
-                // Start at the first real image (not the cloned one)
-                this.currentIndex = this.images.length;
-                this.updateCarouselPosition(false); // No transition for initial position
-                
-                console.log('Carousel rendered and ready');
-            }
-            
-            createInfiniteImageArray() {
-                if (this.images.length === 0) return [];
-                
-                // For infinite loop, we need to clone images at the beginning and end
-                const clonedStart = [...this.images]; // Clone all images for the start
-                const clonedEnd = [...this.images]; // Clone all images for the end
-                
-                // Create the infinite array: [cloned_images, original_images, cloned_images]
-                return [...clonedStart, ...this.images, ...clonedEnd];
-            }
-            
-            setupEventListeners() {
-                // Navigation buttons
-                const prevBtn = document.getElementById('prevBtn');
-                const nextBtn = document.getElementById('nextBtn');
-                
-                if (prevBtn) prevBtn.addEventListener('click', () => this.prevSlide());
-                if (nextBtn) nextBtn.addEventListener('click', () => this.nextSlide());
-                
-                // Dots navigation
-                const dots = document.querySelectorAll('.carousel-dot');
-                dots.forEach((dot, index) => {
-                    dot.addEventListener('click', () => this.goToSlide(index));
-                });
-                
-                // Touch/swipe support
-                this.setupTouchEvents();
-                
-                // Pause on hover
-                this.carousel.addEventListener('mouseenter', () => this.pauseAutoSlide());
-                this.carousel.addEventListener('mouseleave', () => this.resumeAutoSlide());
-            }
-            
-            setupTouchEvents() {
-                let startX = 0;
-                let currentX = 0;
-                let isDragging = false;
-                
-                const track = document.getElementById('carousel-track');
-                if (!track) return;
-                
-                track.addEventListener('touchstart', (e) => {
-                    startX = e.touches[0].clientX;
-                    isDragging = true;
-                    this.pauseAutoSlide();
-                });
-                
-                track.addEventListener('touchmove', (e) => {
-                    if (!isDragging) return;
-                    currentX = e.touches[0].clientX;
-                    const diff = startX - currentX;
-                    
-                    if (Math.abs(diff) > 50) { // Minimum swipe distance
-                        if (diff > 0) {
-                            this.nextSlide();
-                        } else {
-                            this.prevSlide();
-                        }
-                        isDragging = false;
-                    }
-                });
-                
-                track.addEventListener('touchend', () => {
-                    isDragging = false;
-                    this.resumeAutoSlide();
-                });
-            }
-            
-            nextSlide() {
-                if (this.isTransitioning) return;
-                
-                this.currentIndex++;
-                this.updateCarouselPosition(true);
-                this.handleInfiniteLoop();
-            }
-            
-            prevSlide() {
-                if (this.isTransitioning) return;
-                
-                this.currentIndex--;
-                this.updateCarouselPosition(true);
-                this.handleInfiniteLoop();
-            }
-            
-            goToSlide(index) {
-                if (this.isTransitioning) return;
-                
-                // Adjust for the cloned images at the beginning
-                this.currentIndex = index + this.images.length;
-                this.updateCarouselPosition(true);
-                this.updateDots();
-                this.updateCounter();
-            }
-            
-            updateCarouselPosition(withTransition = true) {
-                const track = document.getElementById('carousel-track');
-                if (!track) return;
-                
-                const slideWidth = 100; // Each slide is 100% width
-                const translateX = -this.currentIndex * slideWidth;
-                
-                if (withTransition) {
-                    track.style.transition = 'transform 0.5s ease-in-out';
-                    this.isTransitioning = true;
-                    
-                    // Reset transition flag after animation
-                    setTimeout(() => {
-                        this.isTransitioning = false;
-                    }, 500);
+                if (data.images && data.images.length > 0) {
+                    images = data.images;
+                    createInfiniteCarousel();
+                    updateImageCounter();
+                    hideLoading();
                 } else {
-                    track.style.transition = 'none';
+                    showNoImagesMessage();
                 }
-                
-                track.style.transform = `translateX(${translateX}%)`;
-                
-                this.updateDots();
-                this.updateCounter();
-            }
-            
-            handleInfiniteLoop() {
-                const totalImages = this.images.length;
-                
-                setTimeout(() => {
-                    // If we're at the end of the original images (moved to the cloned set at the end)
-                    if (this.currentIndex >= totalImages * 2) {
-                        this.currentIndex = totalImages; // Jump back to start of original images
-                        this.updateCarouselPosition(false);
-                    }
-                    // If we're at the beginning of the cloned images (moved to the cloned set at the start)
-                    else if (this.currentIndex < totalImages) {
-                        this.currentIndex = totalImages * 2 - 1; // Jump to end of original images
-                        this.updateCarouselPosition(false);
-                    }
-                }, 500); // Wait for transition to complete
-            }
-            
-            updateDots() {
-                const dots = document.querySelectorAll('.carousel-dot');
-                dots.forEach((dot, index) => {
-                    dot.classList.remove('active');
-                });
-                
-                // Calculate actual image index for dots
-                const actualIndex = (this.currentIndex - this.images.length + this.images.length) % this.images.length;
-                if (dots[actualIndex]) {
-                    dots[actualIndex].classList.add('active');
-                }
-            }
-            
-            updateCounter() {
-                const currentImageSpan = document.getElementById('current-image');
-                const totalImagesSpan = document.getElementById('total-images');
-                
-                if (currentImageSpan && totalImagesSpan) {
-                    const actualIndex = (this.currentIndex - this.images.length + this.images.length) % this.images.length;
-                    currentImageSpan.textContent = actualIndex + 1;
-                    totalImagesSpan.textContent = this.images.length;
-                }
-            }
-            
-            startAutoSlide() {
-                this.slideInterval = setInterval(() => {
-                    this.nextSlide();
-                }, this.autoSlideDelay);
-            }
-            
-            pauseAutoSlide() {
-                if (this.slideInterval) {
-                    clearInterval(this.slideInterval);
-                    this.slideInterval = null;
-                }
-            }
-            
-            resumeAutoSlide() {
-                if (!this.slideInterval) {
-                    this.startAutoSlide();
-                }
-            }
-            
-            showNoImagesMessage() {
-                this.carousel.innerHTML = `
-                    <div class="carousel-message">
-                        <div class="message-icon">📸</div>
-                        <h3>No Images Found</h3>
-                        <p>Upload some photos to start the slideshow!</p>
-                        <a href="/upload" class="upload-btn-msg">Upload Photos</a>
-                    </div>
-                `;
-            }
-            
-            showErrorMessage() {
-                this.carousel.innerHTML = `
-                    <div class="carousel-message error">
-                        <div class="message-icon">⚠️</div>
-                        <h3>Error Loading Images</h3>
-                        <p>There was a problem loading the slideshow.</p>
-                        <button onclick="location.reload()" class="reload-btn">Try Again</button>
-                    </div>
-                `;
-            }
-            
-            setupInfiniteLoop() {
-                // The infinite loop is already set up in the render method
-                console.log('Infinite loop setup complete');
+            } catch (error) {
+                console.error('Error loading images:', error);
+                showErrorMessage();
             }
         }
 
-        // Initialize carousel when page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM loaded, initializing carousel...');
-            new InfiniteCarousel();
+        function createInfiniteCarousel() {
+            const wrapper = document.getElementById('carousel-wrapper');
+            wrapper.innerHTML = '';
+
+            // Create enough copies to ensure seamless infinite scroll
+            const totalCopies = Math.max(3, Math.ceil(10 / images.length)); // At least 3 sets
+            
+            for (let copy = 0; copy < totalCopies; copy++) {
+                images.forEach((imageUrl, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'carousel-item';
+                    
+                    const img = document.createElement('img');
+                    img.src = imageUrl;
+                    img.alt = `Party Image ${index + 1}`;
+                    img.loading = 'lazy';
+                    
+                    const info = document.createElement('div');
+                    info.className = 'image-info';
+                    info.innerHTML = `
+                        <h3>📸 Photo ${(index + 1)}</h3>
+                        <p>SFC 30 Party Memory</p>
+                    `;
+                    
+                    item.appendChild(img);
+                    item.appendChild(info);
+                    wrapper.appendChild(item);
+                });
+            }
+
+            // Set animation duration
+            setSpeed(currentSpeed);
+        }
+
+        function setSpeed(seconds) {
+            currentSpeed = seconds;
+            const wrapper = document.getElementById('carousel-wrapper');
+            wrapper.style.animationDuration = `${seconds}s`;
+            
+            // Update active speed button
+            document.querySelectorAll('.speed-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function togglePause() {
+            const wrapper = document.getElementById('carousel-wrapper');
+            const pauseBtn = document.getElementById('pause-btn');
+            
+            isPaused = !isPaused;
+            
+            if (isPaused) {
+                wrapper.classList.add('paused');
+                pauseBtn.innerHTML = '▶️';
+                pauseBtn.title = 'Play';
+            } else {
+                wrapper.classList.remove('paused');
+                pauseBtn.innerHTML = '⏸️';
+                pauseBtn.title = 'Pause';
+            }
+        }
+
+        function toggleDirection() {
+            const wrapper = document.getElementById('carousel-wrapper');
+            const directionBtn = document.getElementById('direction-btn');
+            
+            isReversed = !isReversed;
+            
+            if (isReversed) {
+                wrapper.style.animationDirection = 'reverse';
+                directionBtn.innerHTML = '↩️';
+                directionBtn.title = 'Normal Direction';
+            } else {
+                wrapper.style.animationDirection = 'normal';
+                directionBtn.innerHTML = '🔄';
+                directionBtn.title = 'Reverse Direction';
+            }
+        }
+
+        function refreshImages() {
+            showLoading();
+            loadImages();
+        }
+
+        function updateImageCounter() {
+            const counter = document.getElementById('image-counter');
+            counter.textContent = `${images.length} photos`;
+        }
+
+        function showLoading() {
+            document.getElementById('loading-overlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
+
+        function showNoImagesMessage() {
+            const wrapper = document.getElementById('carousel-wrapper');
+            wrapper.innerHTML = `
+                <div style="display: flex; justify-content: center; align-items: center; height: 100vh; color: white; text-align: center; flex-direction: column;">
+                    <h2>📸 No Photos Yet</h2>
+                    <p>Upload some photos to get the party started!</p>
+                    <a href="/upload" style="margin-top: 20px; padding: 15px 30px; background: rgba(255,255,255,0.2); color: white; text-decoration: none; border-radius: 25px;">Upload Photos</a>
+                </div>
+            `;
+            hideLoading();
+        }
+
+        function showErrorMessage() {
+            const wrapper = document.getElementById('carousel-wrapper');
+            wrapper.innerHTML = `
+                <div style="display: flex; justify-content: center; align-items: center; height: 100vh; color: white; text-align: center; flex-direction: column;">
+                    <h2>❌ Error Loading Photos</h2>
+                    <p>There was a problem loading the party photos.</p>
+                    <button onclick="refreshImages()" style="margin-top: 20px; padding: 15px 30px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 25px; cursor: pointer;">Try Again</button>
+                </div>
+            `;
+            hideLoading();
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case ' ': // Spacebar
+                    e.preventDefault();
+                    togglePause();
+                    break;
+                case 'r':
+                case 'R':
+                    toggleDirection();
+                    break;
+                case 'f':
+                case 'F':
+                    refreshImages();
+                    break;
+                case '1':
+                    setSpeed(60);
+                    break;
+                case '2':
+                    setSpeed(30);
+                    break;
+                case '3':
+                    setSpeed(15);
+                    break;
+                case '4':
+                    setSpeed(8);
+                    break;
+            }
         });
 
-        // Redirect to sync page instead of trying to sync here
-        function syncDropbox() {
-            window.location.href = '/sync';
-        }
+        // Auto-refresh images every 5 minutes
+        setInterval(() => {
+            console.log('Auto-refreshing images...');
+            refreshImages();
+        }, 5 * 60 * 1000);
 
-        // Also initialize if the script runs after DOM is ready
-        if (document.readyState !== 'loading') {
-            new InfiniteCarousel();
-        }
+        // Load images on page load
+        window.addEventListener('load', () => {
+            loadImages();
+        });
+
+        // Handle visibility change (pause when tab is hidden)
+        document.addEventListener('visibilitychange', () => {
+            const wrapper = document.getElementById('carousel-wrapper');
+            if (document.hidden) {
+                wrapper.style.animationPlayState = 'paused';
+            } else if (!isPaused) {
+                wrapper.style.animationPlayState = 'running';
+            }
+        });
     </script>
 </body>
 </html>
