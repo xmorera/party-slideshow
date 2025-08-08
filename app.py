@@ -1112,5 +1112,131 @@ def sync_dropbox_manual():
             'message': f'Sync error: {str(e)}'
         }), 500
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+def get_unique_filename(filepath, original_size):
+    """
+    Get a unique filename by checking if file exists and comparing sizes.
+    If same name and size exists, ignore. If same name but different size, append number.
+    """
+    if not os.path.exists(filepath):
+        return filepath
+    
+    # Check if existing file has same size
+    existing_size = os.path.getsize(filepath)
+    if existing_size == original_size:
+        print(f"File {os.path.basename(filepath)} already exists with same size ({existing_size} bytes) - ignoring")
+        return None  # Signal to ignore this file
+    
+    # Same name but different size - append number
+    directory = os.path.dirname(filepath)
+    filename = os.path.basename(filepath)
+    name, ext = os.path.splitext(filename)
+    
+    counter = 1
+    while True:
+        new_filename = f"{name} ({counter}){ext}"
+        new_filepath = os.path.join(directory, new_filename)
+        
+        if not os.path.exists(new_filepath):
+            print(f"File {filename} exists with different size - saving as {new_filename}")
+            return new_filepath
+        
+        # Check if this numbered version has the same size
+        existing_size = os.path.getsize(new_filepath)
+        if existing_size == original_size:
+            print(f"File {new_filename} already exists with same size ({existing_size} bytes) - ignoring")
+            return None  # Signal to ignore this file
+        
+        counter += 1
+        
+        # Safety limit to prevent infinite loop
+        if counter > 100:
+            print(f"ERROR: Too many versions of {filename} exist, skipping upload")
+            return None
+
+@app.route('/upload', methods=['GET', 'POST'])
+def upload():
+    if request.method == 'POST':
+        if 'files[]' not in request.files:
+            flash('No files selected')
+            return redirect(request.url)
+        
+        files = request.files.getlist('files[]')
+        uploaded_count = 0
+        ignored_count = 0
+        error_count = 0
+        uploaded_files = []
+        
+        for file in files:
+            if file.filename == '':
+                continue
+                
+            if file and allowed_file(file.filename):
+                try:
+                    # Get original filename and prepare temp save
+                    original_filename = secure_filename(file.filename)
+                    temp_path = os.path.join(IMAGE_FOLDER, f"temp_{original_filename}")
+                    
+                    # Save temporarily to get file size
+                    file.save(temp_path)
+                    file_size = os.path.getsize(temp_path)
+                    
+                    # Get the final filename (check for duplicates)
+                    final_path = os.path.join(IMAGE_FOLDER, original_filename)
+                    unique_path = get_unique_filename(final_path, file_size)
+                    
+                    if unique_path is None:
+                        # File should be ignored (duplicate with same size)
+                        os.remove(temp_path)  # Clean up temp file
+                        ignored_count += 1
+                        print(f"Ignored duplicate file: {original_filename}")
+                    else:
+                        # Move temp file to final location
+                        if temp_path != unique_path:
+                            os.rename(temp_path, unique_path)
+                        
+                        uploaded_files.append(os.path.basename(unique_path))
+                        uploaded_count += 1
+                        print(f"Successfully uploaded: {os.path.basename(unique_path)} ({file_size} bytes)")
+                        
+                except Exception as e:
+                    error_count += 1
+                    print(f"Error uploading {file.filename}: {e}")
+                    # Clean up temp file if it exists
+                    if 'temp_path' in locals() and os.path.exists(temp_path):
+                        os.remove(temp_path)
+            else:
+                error_count += 1
+                print(f"File type not allowed: {file.filename}")
+        
+        # Prepare flash messages
+        messages = []
+        if uploaded_count > 0:
+            messages.append(f"✅ Successfully uploaded {uploaded_count} photos")
+            if len(uploaded_files) <= 5:
+                messages.append(f"Files: {', '.join(uploaded_files)}")
+        
+        if ignored_count > 0:
+            messages.append(f"📋 Ignored {ignored_count} duplicate photos (same name and size)")
+        
+        if error_count > 0:
+            messages.append(f"❌ Failed to upload {error_count} files")
+        
+        for message in messages:
+            flash(message)
+        
+        # Auto-sync after successful upload if enabled
+        if uploaded_count > 0:
+            try:
+                print("=== Auto-sync after upload ===")
+                if sync_dropbox_images():
+                    flash("🔄 Photos automatically synced to Dropbox")
+                else:
+                    flash("⚠️ Photos uploaded but Dropbox sync failed")
+            except Exception as e:
+                flash(f"⚠️ Photos uploaded but sync error: {str(e)}")
+        
+        return redirect(url_for('upload'))
+    
+    # GET request - show upload form
+    images = get_images()
+    return render_template('upload.html', images=images)

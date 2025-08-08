@@ -442,5 +442,116 @@
             }
         });
     </script>
+
+    <!-- Add this JavaScript to upload.html for better user feedback -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.getElementById('file-input');
+        const fileList = document.getElementById('file-list');
+        
+        fileInput.addEventListener('change', function(e) {
+            displaySelectedFiles(e.target.files);
+        });
+        
+        function displaySelectedFiles(files) {
+            if (!fileList) return;
+            
+            fileList.innerHTML = '';
+            
+            if (files.length === 0) {
+                fileList.innerHTML = '<p>No files selected</p>';
+                return;
+            }
+            
+            const ul = document.createElement('ul');
+            ul.style.listStyle = 'none';
+            ul.style.padding = '0';
+            
+            Array.from(files).forEach(file => {
+                const li = document.createElement('li');
+                li.style.margin = '5px 0';
+                li.style.padding = '10px';
+                li.style.background = 'rgba(255,255,255,0.1)';
+                li.style.borderRadius = '5px';
+                
+                const fileSize = (file.size / (1024 * 1024)).toFixed(2);
+                li.innerHTML = `
+                    <strong>${file.name}</strong><br>
+                    <small>Size: ${fileSize} MB | Type: ${file.type}</small>
+                `;
+                ul.appendChild(li);
+            });
+            
+            fileList.appendChild(ul);
+        }
+    });
+
+    // Enhanced upload progress
+    function uploadFiles() {
+        const fileInput = document.getElementById('file-input');
+        const files = fileInput.files;
+        
+        if (files.length === 0) {
+            alert('Please select files to upload');
+            return false;
+        }
+        
+        // Show upload progress
+        const submitBtn = document.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Uploading...';
+        submitBtn.disabled = true;
+        
+        // Create progress indicator
+        const progressDiv = document.createElement('div');
+        progressDiv.innerHTML = `
+            <div style="margin: 20px 0; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 10px; text-align: center;">
+                <div style="margin-bottom: 10px;">📤 Uploading ${files.length} files...</div>
+                <div style="background: rgba(255,255,255,0.2); height: 20px; border-radius: 10px; overflow: hidden;">
+                    <div id="progress-bar" style="background: linear-gradient(45deg, #4CAF50, #45a049); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                </div>
+                <div style="margin-top: 10px; font-size: 14px;">Checking for duplicates and processing...</div>
+            </div>
+        `;
+        
+        const form = document.querySelector('form');
+        form.appendChild(progressDiv);
+        
+        // Simulate progress (since we can't track server-side duplicate checking)
+        let progress = 0;
+        const progressBar = document.getElementById('progress-bar');
+        const progressInterval = setInterval(() => {
+            progress += Math.random() * 15;
+            if (progress > 90) progress = 90;
+            progressBar.style.width = progress + '%';
+        }, 200);
+        
+        // Clean up on form submission
+        setTimeout(() => {
+            clearInterval(progressInterval);
+            progressBar.style.width = '100%';
+        }, 1000);
+        
+        return true;
+    }
+    </script>
+
+    <!-- Add to the upload form -->
+    <form action="/upload" method="post" enctype="multipart/form-data" onsubmit="return uploadFiles()">
+        <div class="upload-area">
+            <input type="file" id="file-input" name="files[]" multiple accept="image/*" style="display: none;">
+            <label for="file-input" class="upload-label">
+                📸 Click to select photos or drag & drop
+            </label>
+        </div>
+        
+        <div id="file-list" style="margin: 20px 0;">
+            <!-- Selected files will be displayed here -->
+        </div>
+        
+        <button type="submit" class="upload-btn">
+            🚀 Upload Photos
+        </button>
+    </form>
 </body>
 </html>
