@@ -592,10 +592,17 @@ def api_images():
     """API endpoint to get images as JSON"""
     try:
         print("=== API images request ===")
+        print(f"IMAGE_FOLDER path: {IMAGE_FOLDER}")
+        print(f"IMAGE_FOLDER exists: {os.path.exists(IMAGE_FOLDER)}")
+        
+        if os.path.exists(IMAGE_FOLDER):
+            files_in_folder = os.listdir(IMAGE_FOLDER)
+            print(f"Files in folder: {files_in_folder}")
         
         # Get images from local folder only (no Dropbox operations)
         images = get_images()
         print(f"get_images() returned: {len(images)} items")
+        print(f"Images details: {images}")
         
         # Extract just the URLs for the frontend
         image_urls = []
@@ -614,12 +621,18 @@ def api_images():
                 image_urls.append(url)
                 print(f"  {i+1}. Fallback URL: {url}")
         
+        print(f"Final URLs being returned: {image_urls}")
         print(f"Returning {len(image_urls)} image URLs to frontend")
         
         return jsonify({
             'images': image_urls,
             'count': len(image_urls),
-            'status': 'success'
+            'status': 'success',
+            'debug': {
+                'folder_path': IMAGE_FOLDER,
+                'folder_exists': os.path.exists(IMAGE_FOLDER),
+                'raw_images': images
+            }
         })
         
     except Exception as e:
