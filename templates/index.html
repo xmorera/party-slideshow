@@ -398,19 +398,33 @@
         // Load images and start carousel
         async function loadImages() {
             try {
+                console.log('Fetching images from /api/images...');
                 const response = await fetch('/api/images');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
+                console.log('API response:', data);
+                
+                if (data.status === 'error') {
+                    throw new Error(data.error || 'API returned error status');
+                }
                 
                 if (data.images && data.images.length > 0) {
                     images = data.images;
+                    console.log(`Loaded ${images.length} images:`, images.slice(0, 3));
                     createInfiniteCarousel();
                     updateImageCounter();
                     hideLoading();
                 } else {
+                    console.log('No images returned from API');
                     showNoImagesMessage();
                 }
             } catch (error) {
                 console.error('Error loading images:', error);
+                console.error('Error details:', error.message);
                 showErrorMessage();
             }
         }

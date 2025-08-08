@@ -497,14 +497,18 @@ def get_images():
             return []
         
         images = []
+        print(f"Scanning {IMAGE_FOLDER} for images...")
+        
         for filename in os.listdir(IMAGE_FOLDER):
             if any(filename.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']):
                 # Return objects with filename and URL
-                images.append({
+                image_obj = {
                     'filename': filename,
                     'url': f"/images/{filename}",
                     'path': os.path.join(IMAGE_FOLDER, filename)
-                })
+                }
+                images.append(image_obj)
+                print(f"  Found image: {filename}")
         
         # Sort by modification time (newest first)
         images.sort(key=lambda x: os.path.getmtime(x['path']), reverse=True)
@@ -593,30 +597,45 @@ def serve_image_root(filename):
 def api_images():
     """API endpoint to get images as JSON"""
     try:
+        print("=== API images request ===")
+        
+        # Get images from local folder only (no Dropbox operations)
         images = get_images()
+        print(f"get_images() returned: {len(images)} items")
         
         # Extract just the URLs for the frontend
         image_urls = []
-        for image in images:
+        for i, image in enumerate(images):
             if isinstance(image, dict) and 'url' in image:
                 image_urls.append(image['url'])
+                print(f"  {i+1}. Added URL: {image['url']}")
             elif isinstance(image, str):
                 # If it's already a string, assume it's the filename and create URL
-                image_urls.append(f"/images/{image}")
+                url = f"/images/{image}"
+                image_urls.append(url)
+                print(f"  {i+1}. Created URL from filename: {url}")
             else:
                 # Fallback - treat as filename
-                image_urls.append(f"/images/{str(image)}")
+                url = f"/images/{str(image)}"
+                image_urls.append(url)
+                print(f"  {i+1}. Fallback URL: {url}")
+        
+        print(f"Returning {len(image_urls)} image URLs to frontend")
         
         return jsonify({
             'images': image_urls,
-            'count': len(image_urls)
+            'count': len(image_urls),
+            'status': 'success'
         })
         
     except Exception as e:
         print(f"ERROR: Failed to get images via API: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
         return jsonify({
             'images': [],
             'count': 0,
+            'status': 'error',
             'error': str(e)
         }), 500
 @app.route('/media/<filename>')
