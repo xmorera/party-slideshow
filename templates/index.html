@@ -15,7 +15,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            overflow-x: hidden;
+            overflow: hidden;
             position: relative;
         }
 
@@ -81,81 +81,6 @@
             font-weight: 300;
         }
 
-        /* Grid Container */
-        .photo-grid-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            overflow: hidden;
-            padding: 100px 20px 120px 20px;
-        }
-
-        .photo-grid-wrapper {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .photo-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            grid-auto-rows: 200px;
-            gap: 15px;
-            width: 100%;
-            animation: scrollGrid 30s linear infinite;
-            padding-right: 100%;
-        }
-
-        .grid-item {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            overflow: hidden;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            min-height: 200px; /* Ensure minimum height */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .grid-item:hover {
-            transform: scale(1.05);
-            z-index: 10;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        .grid-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center;
-            transition: all 0.3s ease;
-        }
-
-        .grid-item:hover img {
-            filter: brightness(1.1) contrast(1.1);
-        }
-
-        /* Animation for infinite scroll */
-        @keyframes scrollGrid {
-            0% {
-                transform: translateX(0);
-            }
-            100% {
-                transform: translateX(-100%);
-            }
-        }
-
-        .paused {
-            animation-play-state: paused !important;
-        }
-
         /* Loading State */
         .loading-overlay {
             position: fixed;
@@ -187,6 +112,71 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Carousel Container */
+        .carousel-container {
+            position: fixed;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 50vh;
+            transform: translateY(-50%);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .carousel-track {
+            display: flex;
+            height: 100%;
+            animation: slideShow 20s linear infinite;
+            gap: 20px;
+        }
+
+        .carousel-item {
+            flex: none;
+            width: 300px;
+            height: 100%;
+            border-radius: 15px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .carousel-item:hover {
+            transform: scale(1.05);
+            z-index: 10;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .carousel-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            transition: all 0.3s ease;
+        }
+
+        .carousel-item:hover img {
+            filter: brightness(1.1) contrast(1.1);
+        }
+
+        /* Animation for infinite scroll */
+        @keyframes slideShow {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
+        .paused {
+            animation-play-state: paused !important;
+        }
+
         /* Speed Controls */
         .speed-controls {
             position: fixed;
@@ -208,6 +198,7 @@
             cursor: pointer;
             font-size: 12px;
             transition: all 0.3s ease;
+            border: none;
         }
 
         .speed-btn.active {
@@ -324,10 +315,13 @@
 
         /* Mobile Responsive */
         @media (max-width: 768px) {
-            .photo-grid {
-                grid-template-columns: repeat(3, 1fr);
-                grid-auto-rows: 150px;
-                gap: 10px;
+            .carousel-container {
+                height: 40vh;
+                padding: 10px;
+            }
+
+            .carousel-item {
+                width: 250px;
             }
 
             .title-overlay {
@@ -341,10 +335,6 @@
 
             .subtitle {
                 font-size: 0.8em;
-            }
-
-            .photo-grid-container {
-                padding: 80px 10px 100px 10px;
             }
 
             .nav-buttons {
@@ -381,10 +371,8 @@
         }
 
         @media (max-width: 480px) {
-            .photo-grid {
-                grid-template-columns: repeat(2, 1fr);
-                grid-auto-rows: 120px;
-                gap: 8px;
+            .carousel-item {
+                width: 200px;
             }
 
             .carousel-controls {
@@ -418,29 +406,27 @@
     <!-- Speed Controls -->
     <div class="speed-controls">
         <div class="speed-btn" onclick="setSpeed(60, event)" title="Slow">🐌</div>
-        <div class="speed-btn active" onclick="setSpeed(30, event)" title="Normal">⚡</div>
-        <div class="speed-btn" onclick="setSpeed(15, event)" title="Fast">🚀</div>
-        <div class="speed-btn" onclick="setSpeed(8, event)" title="Lightning">⚡⚡</div>
+        <div class="speed-btn active" onclick="setSpeed(20, event)" title="Normal">⚡</div>
+        <div class="speed-btn" onclick="setSpeed(10, event)" title="Fast">🚀</div>
+        <div class="speed-btn" onclick="setSpeed(5, event)" title="Lightning">⚡⚡</div>
     </div>
 
-    <!-- Photo Grid -->
-    <div class="photo-grid-container" id="photo-grid-container">
-        <div class="photo-grid-wrapper">
-            <div class="photo-grid" id="photo-grid">
-                <!-- Images will be dynamically loaded here -->
-            </div>
+    <!-- Carousel -->
+    <div class="carousel-container">
+        <div class="carousel-track" id="carousel-track">
+            <!-- Images will be dynamically loaded here -->
         </div>
     </div>
 
     <!-- Controls -->
     <div class="carousel-controls">
-        <button class="control-btn" onclick="previousColumn()" id="prev-btn" title="Previous Column">
+        <button class="control-btn" onclick="previousImage()" id="prev-btn" title="Previous Image">
             ⏮️
         </button>
         <button class="control-btn" onclick="togglePause()" id="pause-btn" title="Pause/Play">
             ⏸️
         </button>
-        <button class="control-btn" onclick="nextColumn()" id="next-btn" title="Next Column">
+        <button class="control-btn" onclick="nextImage()" id="next-btn" title="Next Image">
             ⏭️
         </button>
         <button class="control-btn" onclick="toggleDirection()" id="direction-btn" title="Reverse Direction">
@@ -465,423 +451,423 @@
     </div>
 
     <script>
-let images = [];
-let currentSpeed = 30;
-let isPaused = false;
-let isReversed = false;
-let manualNavigationTimeout;
+        let images = [];
+        let currentSpeed = 20;
+        let isPaused = false;
+        let isReversed = false;
+        let manualNavigationTimeout;
 
-// Load images and start grid
-async function loadImages() {
-    try {
-        console.log('Fetching images from /api/images...');
-        const response = await fetch('/api/images');
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('API response:', data);
-        
-        if (data.status === 'error') {
-            throw new Error(data.error || 'API returned error status');
-        }
-        
-        if (data.images && data.images.length > 0) {
-            images = data.images;
-            console.log(`Loaded ${images.length} images:`, images.slice(0, 3));
-            createPhotoGrid();
-            updateImageCounter();
-            hideLoading();
-        } else {
-            console.log('No images returned from API');
-            showNoImagesMessage();
-        }
-    } catch (error) {
-        console.error('Error loading images:', error);
-        showErrorMessage();
-    }
-}
-
-// Load new images and append to existing ones
-async function loadNewImages() {
-    try {
-        console.log('Checking for new images...');
-        const response = await fetch('/api/images');
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data.status === 'error') {
-            console.error('API error:', data.error);
-            return;
-        }
-        
-        if (data.images && data.images.length > 0) {
-            const newImages = data.images;
-            const oldCount = images.length;
-            
-            // Find truly new images (not already in our array)
-            const newImageUrls = newImages.filter(url => !images.includes(url));
-            
-            if (newImageUrls.length > 0) {
-                console.log(`Found ${newImageUrls.length} new images, adding to grid...`);
-                images = newImages; // Update full array
-                createPhotoGrid(); // Recreate grid with all images
-                updateImageCounter();
+        // Load images and start carousel
+        async function loadImages() {
+            try {
+                console.log('Fetching images from /api/images...');
+                const response = await fetch('/api/images');
                 
-                // Show notification
-                showNewImagesNotification(newImageUrls.length);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('API response:', data);
+                
+                if (data.status === 'error') {
+                    throw new Error(data.error || 'API returned error status');
+                }
+                
+                if (data.images && data.images.length > 0) {
+                    images = data.images;
+                    console.log(`Loaded ${images.length} images:`, images);
+                    createCarousel();
+                    updateImageCounter();
+                    hideLoading();
+                } else {
+                    console.log('No images returned from API');
+                    showNoImagesMessage();
+                }
+            } catch (error) {
+                console.error('Error loading images:', error);
+                showErrorMessage();
+            }
+        }
+
+        // Load new images and append to existing ones
+        async function loadNewImages() {
+            try {
+                console.log('Checking for new images...');
+                const response = await fetch('/api/images');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.status === 'error') {
+                    console.error('API error:', data.error);
+                    return;
+                }
+                
+                if (data.images && data.images.length > 0) {
+                    const newImages = data.images;
+                    const oldCount = images.length;
+                    
+                    // Find truly new images (not already in our array)
+                    const newImageUrls = newImages.filter(url => !images.includes(url));
+                    
+                    if (newImageUrls.length > 0) {
+                        console.log(`Found ${newImageUrls.length} new images, adding to carousel...`);
+                        images = newImages; // Update full array
+                        createCarousel(); // Recreate carousel with all images
+                        updateImageCounter();
+                        
+                        // Show notification
+                        showNewImagesNotification(newImageUrls.length);
+                    } else {
+                        console.log('No new images found');
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking for new images:', error);
+            }
+        }
+
+        function showNewImagesNotification(count) {
+            // Create temporary notification
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 100px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(76, 175, 80, 0.9);
+                color: white;
+                padding: 15px 30px;
+                border-radius: 25px;
+                z-index: 10001;
+                font-size: 16px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                transition: opacity 0.3s ease;
+            `;
+            notification.textContent = `🎉 ${count} new photo${count > 1 ? 's' : ''} added!`;
+            
+            document.body.appendChild(notification);
+            
+            // Fade out after 3 seconds
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        function createCarousel() {
+            const track = document.getElementById('carousel-track');
+            if (!track) {
+                console.error('Carousel track element not found!');
+                return;
+            }
+            
+            track.innerHTML = '';
+            
+            console.log('Creating carousel with', images.length, 'images');
+
+            if (images.length === 0) {
+                console.log('No images to display');
+                return;
+            }
+
+            // Create multiple copies for infinite scroll
+            const totalCopies = Math.max(3, Math.ceil(15 / images.length));
+            console.log('Creating', totalCopies, 'copies of images');
+            
+            let itemCount = 0;
+            for (let copy = 0; copy < totalCopies; copy++) {
+                images.forEach((imageUrl, index) => {
+                    const carouselItem = document.createElement('div');
+                    carouselItem.className = 'carousel-item';
+                    carouselItem.onclick = () => openImagePopup(imageUrl, index + 1);
+                    
+                    const img = document.createElement('img');
+                    img.src = imageUrl;
+                    img.alt = `Party Image ${index + 1}`;
+                    img.loading = 'lazy';
+                    
+                    // Add error handling for images
+                    img.onerror = () => {
+                        console.error('Failed to load image:', imageUrl);
+                        carouselItem.style.background = 'rgba(255, 0, 0, 0.3)';
+                        carouselItem.innerHTML = `<div style="color: white; text-align: center; padding: 20px; display: flex; flex-direction: column; justify-content: center; height: 100%;">❌<br>Failed to load<br><small>${imageUrl}</small></div>`;
+                    };
+                    
+                    img.onload = () => {
+                        console.log('Image loaded successfully:', imageUrl);
+                    };
+                    
+                    carouselItem.appendChild(img);
+                    track.appendChild(carouselItem);
+                    itemCount++;
+                });
+            }
+            
+            console.log('Total carousel items created:', itemCount);
+            
+            // Start animation
+            setSpeed(currentSpeed);
+        }
+
+        function setSpeed(seconds, event = null) {
+            currentSpeed = seconds;
+            const track = document.getElementById('carousel-track');
+            if (track) {
+                track.style.animationDuration = `${seconds}s`;
+                console.log(`Animation speed set to ${seconds}s`);
+            }
+            
+            // Update active speed button
+            document.querySelectorAll('.speed-btn').forEach(btn => btn.classList.remove('active'));
+            
+            if (event && event.target) {
+                event.target.classList.add('active');
             } else {
-                console.log('No new images found');
+                const speedButtons = document.querySelectorAll('.speed-btn');
+                speedButtons.forEach((btn, index) => {
+                    const speeds = [60, 20, 10, 5];
+                    if (speeds[index] === seconds) {
+                        btn.classList.add('active');
+                    }
+                });
             }
         }
-    } catch (error) {
-        console.error('Error checking for new images:', error);
-    }
-}
 
-function showNewImagesNotification(count) {
-    // Create temporary notification
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        top: 100px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(76, 175, 80, 0.9);
-        color: white;
-        padding: 15px 30px;
-        border-radius: 25px;
-        z-index: 10001;
-        font-size: 16px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        transition: opacity 0.3s ease;
-    `;
-    notification.textContent = `🎉 ${count} new photo${count > 1 ? 's' : ''} added!`;
-    
-    document.body.appendChild(notification);
-    
-    // Fade out after 3 seconds
-    setTimeout(() => {
-        notification.style.opacity = '0';
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
+        function togglePause() {
+            const track = document.getElementById('carousel-track');
+            const pauseBtn = document.getElementById('pause-btn');
+            
+            isPaused = !isPaused;
+            
+            if (manualNavigationTimeout) {
+                clearTimeout(manualNavigationTimeout);
             }
-        }, 300);
-    }, 3000);
-}
-
-function createPhotoGrid() {
-    const grid = document.getElementById('photo-grid');
-    if (!grid) {
-        console.error('Grid element not found!');
-        return;
-    }
-    
-    grid.innerHTML = '';
-    
-    console.log('Creating grid with', images.length, 'images');
-
-    if (images.length === 0) {
-        console.log('No images to display');
-        return;
-    }
-
-    // Create multiple copies for infinite scroll - need enough to fill screen + buffer
-    const totalCopies = Math.max(4, Math.ceil(25 / images.length));
-    console.log('Creating', totalCopies, 'copies of images');
-    
-    let itemCount = 0;
-    for (let copy = 0; copy < totalCopies; copy++) {
-        images.forEach((imageUrl, index) => {
-            const gridItem = document.createElement('div');
-            gridItem.className = 'grid-item';
-            gridItem.onclick = () => openImagePopup(imageUrl, index + 1);
             
-            const img = document.createElement('img');
-            img.src = imageUrl;
-            img.alt = `Party Image ${index + 1}`;
-            img.loading = 'lazy';
-            
-            // Add error handling for images
-            img.onerror = () => {
-                console.error('Failed to load image:', imageUrl);
-                gridItem.style.background = 'rgba(255, 0, 0, 0.3)';
-                gridItem.innerHTML = `<div style="color: white; text-align: center; padding: 20px;">❌<br>Failed to load</div>`;
-            };
-            
-            img.onload = () => {
-                console.log('Image loaded successfully:', imageUrl);
-            };
-            
-            gridItem.appendChild(img);
-            grid.appendChild(gridItem);
-            itemCount++;
-        });
-    }
-    
-    console.log('Total grid items created:', itemCount);
-    
-    // Start animation
-    setSpeed(currentSpeed);
-}
-
-function setSpeed(seconds, event = null) {
-    currentSpeed = seconds;
-    const grid = document.getElementById('photo-grid');
-    if (grid) {
-        grid.style.animationDuration = `${seconds}s`;
-        console.log(`Animation speed set to ${seconds}s`);
-    }
-    
-    // Update active speed button
-    document.querySelectorAll('.speed-btn').forEach(btn => btn.classList.remove('active'));
-    
-    if (event && event.target) {
-        event.target.classList.add('active');
-    } else {
-        const speedButtons = document.querySelectorAll('.speed-btn');
-        speedButtons.forEach((btn, index) => {
-            const speeds = [60, 30, 15, 8];
-            if (speeds[index] === seconds) {
-                btn.classList.add('active');
+            if (isPaused) {
+                track.classList.add('paused');
+                pauseBtn.innerHTML = '▶️';
+                pauseBtn.title = 'Play';
+            } else {
+                track.classList.remove('paused');
+                pauseBtn.innerHTML = '⏸️';
+                pauseBtn.title = 'Pause';
             }
-        });
-    }
-}
-
-function togglePause() {
-    const grid = document.getElementById('photo-grid');
-    const pauseBtn = document.getElementById('pause-btn');
-    
-    isPaused = !isPaused;
-    
-    if (manualNavigationTimeout) {
-        clearTimeout(manualNavigationTimeout);
-    }
-    
-    if (isPaused) {
-        grid.classList.add('paused');
-        pauseBtn.innerHTML = '▶️';
-        pauseBtn.title = 'Play';
-    } else {
-        grid.classList.remove('paused');
-        pauseBtn.innerHTML = '⏸️';
-        pauseBtn.title = 'Pause';
-    }
-}
-
-function toggleDirection() {
-    const grid = document.getElementById('photo-grid');
-    const directionBtn = document.getElementById('direction-btn');
-    
-    isReversed = !isReversed;
-    
-    if (isReversed) {
-        grid.style.animationDirection = 'reverse';
-        directionBtn.innerHTML = '↩️';
-        directionBtn.title = 'Normal Direction';
-    } else {
-        grid.style.animationDirection = 'normal';
-        directionBtn.innerHTML = '🔄';
-        directionBtn.title = 'Reverse Direction';
-    }
-}
-
-function nextColumn() {
-    pauseForManualNavigation();
-    const grid = document.getElementById('photo-grid');
-    const currentTransform = grid.style.transform || 'translateX(0px)';
-    const currentX = parseFloat(currentTransform.replace(/[^\-\d.]/g, '')) || 0;
-    const columnWidth = (window.innerWidth - 80) / 5 + 15; // Column width + gap
-    const newX = currentX - columnWidth;
-    
-    grid.style.transition = 'transform 0.5s ease';
-    grid.style.transform = `translateX(${newX}px)`;
-    
-    setTimeout(() => {
-        grid.style.transition = '';
-        resumeFromManualNavigation();
-    }, 500);
-}
-
-function previousColumn() {
-    pauseForManualNavigation();
-    const grid = document.getElementById('photo-grid');
-    const currentTransform = grid.style.transform || 'translateX(0px)';
-    const currentX = parseFloat(currentTransform.replace(/[^\-\d.]/g, '')) || 0;
-    const columnWidth = (window.innerWidth - 80) / 5 + 15; // Column width + gap
-    const newX = currentX + columnWidth;
-    
-    grid.style.transition = 'transform 0.5s ease';
-    grid.style.transform = `translateX(${newX}px)`;
-    
-    setTimeout(() => {
-        grid.style.transition = '';
-        resumeFromManualNavigation();
-    }, 500);
-}
-
-function pauseForManualNavigation() {
-    const grid = document.getElementById('photo-grid');
-    grid.style.animationPlayState = 'paused';
-    
-    if (manualNavigationTimeout) {
-        clearTimeout(manualNavigationTimeout);
-    }
-}
-
-function resumeFromManualNavigation() {
-    manualNavigationTimeout = setTimeout(() => {
-        if (!isPaused) {
-            const grid = document.getElementById('photo-grid');
-            grid.style.animationPlayState = 'running';
         }
-    }, 3000);
-}
 
-function openImagePopup(imageUrl, imageNumber) {
-    const popup = document.getElementById('image-popup');
-    const popupImage = document.getElementById('popup-image');
-    
-    popupImage.src = imageUrl;
-    popup.classList.add('open');
-    
-    pauseForManualNavigation();
-}
+        function toggleDirection() {
+            const track = document.getElementById('carousel-track');
+            const directionBtn = document.getElementById('direction-btn');
+            
+            isReversed = !isReversed;
+            
+            if (isReversed) {
+                track.style.animationDirection = 'reverse';
+                directionBtn.innerHTML = '↩️';
+                directionBtn.title = 'Normal Direction';
+            } else {
+                track.style.animationDirection = 'normal';
+                directionBtn.innerHTML = '🔄';
+                directionBtn.title = 'Reverse Direction';
+            }
+        }
 
-function closeImagePopup() {
-    const popup = document.getElementById('image-popup');
-    popup.classList.remove('open');
-    
-    resumeFromManualNavigation();
-}
+        function nextImage() {
+            pauseForManualNavigation();
+            const track = document.getElementById('carousel-track');
+            const currentTransform = track.style.transform || 'translateX(0px)';
+            const currentX = parseFloat(currentTransform.replace(/[^\-\d.]/g, '')) || 0;
+            const itemWidth = 320; // 300px width + 20px gap
+            const newX = currentX - itemWidth;
+            
+            track.style.transition = 'transform 0.5s ease';
+            track.style.transform = `translateX(${newX}px)`;
+            
+            setTimeout(() => {
+                track.style.transition = '';
+                resumeFromManualNavigation();
+            }, 500);
+        }
 
-function refreshImages() {
-    showLoading();
-    loadImages();
-}
+        function previousImage() {
+            pauseForManualNavigation();
+            const track = document.getElementById('carousel-track');
+            const currentTransform = track.style.transform || 'translateX(0px)';
+            const currentX = parseFloat(currentTransform.replace(/[^\-\d.]/g, '')) || 0;
+            const itemWidth = 320; // 300px width + 20px gap
+            const newX = currentX + itemWidth;
+            
+            track.style.transition = 'transform 0.5s ease';
+            track.style.transform = `translateX(${newX}px)`;
+            
+            setTimeout(() => {
+                track.style.transition = '';
+                resumeFromManualNavigation();
+            }, 500);
+        }
 
-function updateImageCounter() {
-    const counter = document.getElementById('image-counter');
-    counter.textContent = `${images.length} photos`;
-}
+        function pauseForManualNavigation() {
+            const track = document.getElementById('carousel-track');
+            track.style.animationPlayState = 'paused';
+            
+            if (manualNavigationTimeout) {
+                clearTimeout(manualNavigationTimeout);
+            }
+        }
 
-function showLoading() {
-    const loadingOverlay = document.getElementById('loading-overlay');
-    if (loadingOverlay) {
-        loadingOverlay.style.display = 'flex';
-    }
-}
+        function resumeFromManualNavigation() {
+            manualNavigationTimeout = setTimeout(() => {
+                if (!isPaused) {
+                    const track = document.getElementById('carousel-track');
+                    track.style.animationPlayState = 'running';
+                }
+            }, 3000);
+        }
 
-function hideLoading() {
-    const loadingOverlay = document.getElementById('loading-overlay');
-    if (loadingOverlay) {
-        loadingOverlay.style.display = 'none';
-    }
-}
+        function openImagePopup(imageUrl, imageNumber) {
+            const popup = document.getElementById('image-popup');
+            const popupImage = document.getElementById('popup-image');
+            
+            popupImage.src = imageUrl;
+            popup.classList.add('open');
+            
+            pauseForManualNavigation();
+        }
 
-function showNoImagesMessage() {
-    const grid = document.getElementById('photo-grid');
-    grid.innerHTML = `
-        <div style="grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; height: 200px; color: white; text-align: center; flex-direction: column;">
-            <h2>📸 No Photos Yet</h2>
-            <p>Upload some photos to get the party started!</p>
-            <a href="/upload" style="margin-top: 20px; padding: 15px 30px; background: rgba(255,255,255,0.2); color: white; text-decoration: none; border-radius: 25px;">Upload Photos</a>
-        </div>
-    `;
-    hideLoading();
-}
+        function closeImagePopup() {
+            const popup = document.getElementById('image-popup');
+            popup.classList.remove('open');
+            
+            resumeFromManualNavigation();
+        }
 
-function showErrorMessage() {
-    const grid = document.getElementById('photo-grid');
-    grid.innerHTML = `
-        <div style="grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; height: 200px; color: white; text-align: center; flex-direction: column;">
-            <h2>❌ Error Loading Photos</h2>
-            <p>There was a problem loading the party photos.</p>
-            <button onclick="refreshImages()" style="margin-top: 20px; padding: 15px 30px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 25px; cursor: pointer;">Try Again</button>
-        </div>
-    `;
-    hideLoading();
-}
+        function refreshImages() {
+            showLoading();
+            loadImages();
+        }
 
-// Enhanced keyboard controls
-document.addEventListener('keydown', (e) => {
-    switch(e.key) {
-        case ' ': // Spacebar
-            e.preventDefault();
-            togglePause();
-            break;
-        case 'ArrowLeft': // Left arrow
-            e.preventDefault();
-            previousColumn();
-            break;
-        case 'ArrowRight': // Right arrow
-            e.preventDefault();
-            nextColumn();
-            break;
-        case 'Escape': // Escape key to close popup
-            closeImagePopup();
-            break;
-        case 'r':
-        case 'R':
-            toggleDirection();
-            break;
-        case 'f':
-        case 'F':
-            refreshImages();
-            break;
-        case '1':
-            setSpeed(60);
-            break;
-        case '2':
-            setSpeed(30);
-            break;
-        case '3':
-            setSpeed(15);
-            break;
-        case '4':
-            setSpeed(8);
-            break;
-    }
-});
+        function updateImageCounter() {
+            const counter = document.getElementById('image-counter');
+            counter.textContent = `${images.length} photos`;
+        }
 
-// Check for new images every 1 minute
-setInterval(() => {
-    console.log('Auto-checking for new images...');
-    loadNewImages();
-}, 60 * 1000); // 60 seconds = 1 minute
+        function showLoading() {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            if (loadingOverlay) {
+                loadingOverlay.style.display = 'flex';
+            }
+        }
 
-// Load images on page load
-window.addEventListener('load', () => {
-    loadImages();
-});
+        function hideLoading() {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            if (loadingOverlay) {
+                loadingOverlay.style.display = 'none';
+            }
+        }
 
-// Handle visibility change
-document.addEventListener('visibilitychange', () => {
-    const grid = document.getElementById('photo-grid');
-    if (document.hidden) {
-        grid.style.animationPlayState = 'paused';
-    } else if (!isPaused) {
-        grid.style.animationPlayState = 'running';
-    }
-});
+        function showNoImagesMessage() {
+            const track = document.getElementById('carousel-track');
+            track.innerHTML = `
+                <div style="display: flex; justify-content: center; align-items: center; height: 100%; color: white; text-align: center; flex-direction: column; width: 100%;">
+                    <h2>📸 No Photos Yet</h2>
+                    <p>Upload some photos to get the party started!</p>
+                    <a href="/upload" style="margin-top: 20px; padding: 15px 30px; background: rgba(255,255,255,0.2); color: white; text-decoration: none; border-radius: 25px;">Upload Photos</a>
+                </div>
+            `;
+            hideLoading();
+        }
 
-// Image popup event listeners
-document.getElementById('close-popup').addEventListener('click', closeImagePopup);
+        function showErrorMessage() {
+            const track = document.getElementById('carousel-track');
+            track.innerHTML = `
+                <div style="display: flex; justify-content: center; align-items: center; height: 100%; color: white; text-align: center; flex-direction: column; width: 100%;">
+                    <h2>❌ Error Loading Photos</h2>
+                    <p>There was a problem loading the party photos.</p>
+                    <button onclick="refreshImages()" style="margin-top: 20px; padding: 15px 30px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 25px; cursor: pointer;">Try Again</button>
+                </div>
+            `;
+            hideLoading();
+        }
 
-// Close popup when clicking outside
-document.getElementById('image-popup').addEventListener('click', (e) => {
-    if (e.target.id === 'image-popup') {
-        closeImagePopup();
-    }
-});
+        // Enhanced keyboard controls
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case ' ': // Spacebar
+                    e.preventDefault();
+                    togglePause();
+                    break;
+                case 'ArrowLeft': // Left arrow
+                    e.preventDefault();
+                    previousImage();
+                    break;
+                case 'ArrowRight': // Right arrow
+                    e.preventDefault();
+                    nextImage();
+                    break;
+                case 'Escape': // Escape key to close popup
+                    closeImagePopup();
+                    break;
+                case 'r':
+                case 'R':
+                    toggleDirection();
+                    break;
+                case 'f':
+                case 'F':
+                    refreshImages();
+                    break;
+                case '1':
+                    setSpeed(60);
+                    break;
+                case '2':
+                    setSpeed(20);
+                    break;
+                case '3':
+                    setSpeed(10);
+                    break;
+                case '4':
+                    setSpeed(5);
+                    break;
+            }
+        });
+
+        // Check for new images every 1 minute
+        setInterval(() => {
+            console.log('Auto-checking for new images...');
+            loadNewImages();
+        }, 60 * 1000); // 60 seconds = 1 minute
+
+        // Load images on page load
+        window.addEventListener('load', () => {
+            loadImages();
+        });
+
+        // Handle visibility change
+        document.addEventListener('visibilitychange', () => {
+            const track = document.getElementById('carousel-track');
+            if (document.hidden) {
+                track.style.animationPlayState = 'paused';
+            } else if (!isPaused) {
+                track.style.animationPlayState = 'running';
+            }
+        });
+
+        // Image popup event listeners
+        document.getElementById('close-popup').addEventListener('click', closeImagePopup);
+
+        // Close popup when clicking outside
+        document.getElementById('image-popup').addEventListener('click', (e) => {
+            if (e.target.id === 'image-popup') {
+                closeImagePopup();
+            }
+        });
     </script>
 </body>
 </html>
