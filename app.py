@@ -6,7 +6,9 @@ import uuid
 from datetime import datetime
 import dropbox
 import time
-import sys  # Add this import
+import sys
+import logging
+from threading import Lock
 
 # Load environment variables from .env file if it exists
 try:
@@ -75,12 +77,93 @@ def get_current_access_token():
         print(f"ERROR: Failed to get current access token: {e}")
         return None
 
+# Logging (keeps existing print statements functional; new logging adds levels)
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] %(levelname)s %(message)s'
+)
+
+def log_info(msg): 
+    logging.info(msg)
+    print(msg)
+
+def log_error(msg):
+    logging.error(msg)
+    print(msg)
+
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'  # Change this to a random secret key
-IMAGE_FOLDER = os.path.join(os.path.dirname(__file__), 'images')
+
+BASE_DIR = os.path.dirname(__file__)
+IMAGE_FOLDER = os.path.join(BASE_DIR, 'images')
+MEDIA_FOLDER = os.path.join(BASE_DIR, 'media')
+
 ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
 UPLOAD_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
 MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
+
+# Lightweight image metadata cache
+_IMAGE_CACHE = {
+    "items": [],          # list of dicts
+    "last_scan": 0.0,     # epoch time of last scan
+    "fingerprint": 0.0    # max file mtime used as directory fingerprint
+}
+_CACHE_LOCK = Lock()
+SCAN_MIN_INTERVAL = 1.0   # seconds between re-scans (burst protection)
+
+def _scan_images():
+    """Internal: scan disk for images (no locking)."""
+    items = []
+    max_mtime = 0.0
+    if not os.path.isdir(IMAGE_FOLDER):
+        return [], 0.0
+    try:
+        with os.scandir(IMAGE_FOLDER) as it:
+            for entry in it:
+                if not entry.is_file():
+                    continue
+                name_lower = entry.name.lower()
+                if not any(name_lower.endswith(ext) for ext in ALLOWED_EXTENSIONS):
+                    continue
+                try:
+                    stat = entry.stat()
+                    mtime = stat.st_mtime
+                    max_mtime = max(max_mtime, mtime)
+                    items.append({
+                        'filename': entry.name,
+                        'url': f"/images/{entry.name}",
+                        'path': entry.path,
+                        'mtime': mtime
+                    })
+                except FileNotFoundError:
+                    continue  # File vanished between scandir/stat
+        # Newest first
+        items.sort(key=lambda x: x['mtime'], reverse=True)
+        return items, max_mtime
+    except Exception as e:
+        log_error(f"Image scan error: {e}")
+        return [], 0.0
+
+def get_images(force=False):
+    """
+    Cached image metadata.
+    Keeps return shape compatible with previous implementation.
+    """
+    now = time.time()
+    with _CACHE_LOCK:
+        # Quick return if recent scan AND no force
+        if not force and (now - _IMAGE_CACHE['last_scan'] < SCAN_MIN_INTERVAL):
+            return _IMAGE_CACHE['items']
+        items, fp = _scan_images()
+        # Only replace cache if fingerprint changed or forced
+        if force or fp != _IMAGE_CACHE['fingerprint']:
+            _IMAGE_CACHE['items'] = items
+            _IMAGE_CACHE['fingerprint'] = fp
+        _IMAGE_CACHE['last_scan'] = now
+        return _IMAGE_CACHE['items']
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in UPLOAD_EXTENSIONS
 
 # Dropbox configuration
 DROPBOX_APP_KEY = os.environ.get('APPKEY', 'your_new_app_key_here')
@@ -527,50 +610,35 @@ def allowed_file(filename):
 LAST_SYNC_TIME = 0
 SYNC_COOLDOWN = 300  # 5 minutes between syncs
 
+@app.after_request
+def add_default_headers(resp):
+    """
+    Add mild caching headers for images & static-like JSON to reduce network chatter.
+    Does not break current behavior (short max-age for quick updates).
+    """
+    path = request.path
+    if path.startswith("/images/"):
+        resp.headers.setdefault("Cache-Control", "public, max-age=30, immutable")
+    elif path.startswith("/api/images"):
+        resp.headers.setdefault("Cache-Control", "no-store")
+    return resp
+
 @app.route('/')
 def main():
-    """Main page - just serve images without any Dropbox operations"""
     print("=== Loading main page (no Dropbox sync) ===")
-    
-    # Just get images from local folder - no Dropbox operations
     images = get_images()
-    
-    # Prepare data for template
     main_image = None
     carousel_images = []
-    
+
     if images:
-        # Extract first image for main display
-        if isinstance(images[0], dict):
-            main_image = images[0]
-        else:
-            # If it's a string, create object
-            main_image = {
-                'filename': images[0],
-                'url': f"/images/{images[0]}"
-            }
-        
-        # Extract remaining images for carousel
+        main_image = images[0]
         carousel_images = images[1:] if len(images) > 1 else []
-        
-        # Ensure carousel images are in the right format
-        formatted_carousel = []
-        for img in carousel_images:
-            if isinstance(img, dict):
-                formatted_carousel.append(img)
-            else:
-                formatted_carousel.append({
-                    'filename': img,
-                    'url': f"/images/{img}"
-                })
-        carousel_images = formatted_carousel
-    
+
     print(f"Serving {len(images)} images from local cache")
     return render_template('index.html', main_image=main_image, carousel_images=carousel_images)
 
 @app.route('/images/<filename>')
 def serve_image(filename):
-    """Serve images from the images folder"""
     try:
         return send_from_directory(IMAGE_FOLDER, filename)
     except Exception as e:
@@ -579,51 +647,17 @@ def serve_image(filename):
 
 @app.route('/<filename>')
 def serve_image_root(filename):
-    """Serve images from root path (for backward compatibility)"""
-    # Check if it's an image file
-    if any(filename.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']):
+    if any(filename.lower().endswith(ext) for ext in ALLOWED_EXTENSIONS):
         return serve_image(filename)
-    else:
-        # Not an image, return 404
-        return jsonify({'error': 'File not found'}), 404
+    return jsonify({'error': 'File not found'}), 404
 
 @app.route('/api/images')
 def api_images():
-    """API endpoint to get images as JSON"""
     try:
         print("=== API images request ===")
-        print(f"IMAGE_FOLDER path: {IMAGE_FOLDER}")
-        print(f"IMAGE_FOLDER exists: {os.path.exists(IMAGE_FOLDER)}")
-        
-        if os.path.exists(IMAGE_FOLDER):
-            files_in_folder = os.listdir(IMAGE_FOLDER)
-            print(f"Files in folder: {files_in_folder}")
-        
-        # Get images from local folder only (no Dropbox operations)
         images = get_images()
-        print(f"get_images() returned: {len(images)} items")
-        print(f"Images details: {images}")
-        
-        # Extract just the URLs for the frontend
-        image_urls = []
-        for i, image in enumerate(images):
-            if isinstance(image, dict) and 'url' in image:
-                image_urls.append(image['url'])
-                print(f"  {i+1}. Added URL: {image['url']}")
-            elif isinstance(image, str):
-                # If it's already a string, assume it's the filename and create URL
-                url = f"/images/{image}"
-                image_urls.append(url)
-                print(f"  {i+1}. Created URL from filename: {url}")
-            else:
-                # Fallback - treat as filename
-                url = f"/images/{str(image)}"
-                image_urls.append(url)
-                print(f"  {i+1}. Fallback URL: {url}")
-        
-        print(f"Final URLs being returned: {image_urls}")
+        image_urls = [img['url'] for img in images]
         print(f"Returning {len(image_urls)} image URLs to frontend")
-        
         return jsonify({
             'images': image_urls,
             'count': len(image_urls),
@@ -631,10 +665,10 @@ def api_images():
             'debug': {
                 'folder_path': IMAGE_FOLDER,
                 'folder_exists': os.path.exists(IMAGE_FOLDER),
-                'raw_images': images
+                'cached': True,
+                'cache_last_scan': _IMAGE_CACHE['last_scan']
             }
         })
-        
     except Exception as e:
         print(f"ERROR: Failed to get images via API: {e}")
         import traceback
@@ -645,15 +679,15 @@ def api_images():
             'status': 'error',
             'error': str(e)
         }), 500
+
 @app.route('/media/<filename>')
 def serve_media(filename):
-    media_folder = os.path.join(os.path.dirname(__file__), 'media')
-    return send_from_directory(media_folder, filename)
+    return send_from_directory(MEDIA_FOLDER, filename)
 
 @app.route('/list-images')
 def list_images():
     images = get_images()
-    return '<br>'.join(images)
+    return '<br>'.join(i['filename'] for i in images)
 
 @app.route('/upload')
 def upload_page():
@@ -672,74 +706,44 @@ def upload_file():
         return redirect(request.url)
     
     if file and allowed_file(file.filename):
-        # Create images directory if it doesn't exist
         os.makedirs(IMAGE_FOLDER, exist_ok=True)
-        
-        # Generate unique filename
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         unique_id = str(uuid.uuid4())[:8]
         file_extension = file.filename.rsplit('.', 1)[1].lower()
         filename = f"photo_{timestamp}_{unique_id}.{file_extension}"
-        
         filepath = os.path.join(IMAGE_FOLDER, filename)
-        
         try:
-            # Save file locally
             file.save(filepath)
             print(f"Photo saved locally: {filepath}")
-            
-            # Guard clause: Test Dropbox connection before upload
+            # Invalidate cache quickly
+            get_images(force=True)
             print("=== Testing Dropbox connection before upload ===")
             test_dbx = get_dropbox_client_with_retry()
-            
             if not test_dbx:
-                print("ERROR: Could not establish Dropbox connection")
-                flash('Photo uploaded to gallery, but Dropbox connection failed.')
-                print(f"WARNING: Photo uploaded locally but Dropbox connection failed: {filename}")
+                flash('Photo uploaded (Dropbox unavailable).')
                 return redirect(url_for('main'))
-            
-            # Test the connection with a simple API call
             try:
                 account = test_dbx.users_get_current_account()
-                print(f"SUCCESS: Dropbox connection verified - Connected as {account.name.display_name}")
-            except dropbox.exceptions.AuthError as auth_error:
-                print(f"Authentication error during connection test: {auth_error}")
-                if 'expired_access_token' in str(auth_error):
-                    print("ERROR: Token expired and could not be refreshed")
-                    flash('Photo uploaded to gallery, but Dropbox token expired. Please check your Dropbox configuration.')
-                else:
-                    flash('Photo uploaded to gallery, but Dropbox authentication failed.')
-                print(f"WARNING: Photo uploaded locally but Dropbox auth failed: {filename}")
-                return redirect(url_for('main'))
+                print(f"SUCCESS: Dropbox connection verified - {account.name.display_name}")
             except Exception as e:
-                print(f"ERROR: Dropbox connection test failed: {e}")
-                flash('Photo uploaded to gallery, but Dropbox connection test failed.')
-                print(f"WARNING: Photo uploaded locally but Dropbox test failed: {filename}")
+                print(f"Dropbox test failed: {e}")
+                flash('Photo uploaded locally (Dropbox auth failed).')
                 return redirect(url_for('main'))
-            
-            # Upload to Dropbox (connection is verified)
-            print("=== Proceeding with Dropbox upload ===")
             dropbox_success = upload_to_dropbox(filepath, filename)
-            
             if dropbox_success:
-                flash('Photo uploaded successfully to gallery and Dropbox!')
-                print(f"SUCCESS: Photo uploaded to both local and Dropbox: {filename}")
+                flash('Photo uploaded locally & to Dropbox.')
             else:
-                flash('Photo uploaded to gallery, but failed to upload to Dropbox.')
-                print(f"WARNING: Photo uploaded locally but failed to upload to Dropbox: {filename}")
-            
+                flash('Photo uploaded locally (Dropbox upload failed).')
             return redirect(url_for('main'))
         except Exception as e:
-            flash(f'Error uploading photo: {str(e)}')
-            print(f"ERROR: Failed to upload photo: {e}")
+            flash(f'Error uploading photo: {e}')
+            print(f"ERROR upload: {e}")
             return redirect(request.url)
-    else:
-        flash('Invalid file type. Please upload JPG, PNG, GIF, or WebP images.')
-        return redirect(request.url)
+    flash('Invalid file type.')
+    return redirect(request.url)
 
 @app.route('/generate-dropbox-token')
 def token_generator_page():
-    """Serve the token generator page"""
     return render_template('token_generator.html')
 
 @app.route('/generate-tokens', methods=['POST'])
