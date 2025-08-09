@@ -1,557 +1,419 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload Photo - SFC 30</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Upload Photo - SFC 30</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:Arial,system-ui,sans-serif;
+  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  min-height:100vh;
+  color:#fff;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  padding:28px 16px 80px;
+}
+.upload-container{
+  width:100%;
+  max-width:560px;
+  background:rgba(255,255,255,0.09);
+  backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,0.15);
+  border-radius:28px;
+  box-shadow:0 20px 40px -12px rgba(0,0,0,.45);
+  padding:40px 34px 46px;
+  display:flex;
+  flex-direction:column;
+  gap:26px;
+}
+.title{
+  font-size:2.3rem;
+  font-weight:700;
+  line-height:1.05;
+  margin:0 0 6px;
+  background:linear-gradient(45deg,#6ef9d1,#a0f3ff,#ffeaa7);
+  background-size:220% 220%;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation:grad 6s linear infinite;
+  text-align:center;
+}
+@keyframes grad{0%{background-position:0 50%}50%{background-position:100% 50%}100%{background-position:0 50%}}
+.subtitle{font-size:1.05rem;text-align:center;color:rgba(255,255,255,.85);}
+.flash-messages{display:flex;flex-direction:column;gap:6px;font-size:.85rem;}
+.flash-message{padding:10px 14px;border-radius:12px;font-weight:600;}
+.flash-error{background:rgba(255,107,107,.18);border:1px solid rgba(255,107,107,.5);color:#ffc0c0;}
+.flash-success{background:rgba(78,205,196,.2);border:1px solid rgba(78,205,196,.55);color:#d4fffa;}
 
-        body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
+.section{
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.15);
+  padding:22px 22px 26px;
+  border-radius:22px;
+}
+.section h2{
+  font-size:1rem;
+  letter-spacing:.5px;
+  font-weight:600;
+  margin:0;
+  display:flex;
+  gap:6px;
+  align-items:center;
+  text-transform:uppercase;
+  opacity:.85;
+}
 
-        .upload-container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
-            text-align: center;
-            max-width: 500px;
-            width: 100%;
-        }
+.camera-container{position:relative;display:flex;justify-content:center;}
+#video{
+  width:100%;max-width:420px;height:300px;border-radius:18px;
+  object-fit:cover;
+  background:rgba(0,0,0,.35);
+  border:2px solid rgba(255,255,255,.25);
+}
+#canvas{display:none;}
+.preview-container{text-align:center;display:none;}
+.preview-image{max-width:100%;max-height:300px;border-radius:18px;border:2px solid rgba(255,255,255,.25);}
 
-        .title {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin-bottom: 10px;
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffeaa7);
-            background-size: 300% 300%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: gradient 3s ease infinite;
-        }
+.button-group{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;}
+.btn{
+  padding:12px 24px;
+  border:none;
+  border-radius:30px;
+  font-size:.95rem;
+  font-weight:600;
+  cursor:pointer;
+  transition:.25s;
+  letter-spacing:.5px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.btn-primary{background:linear-gradient(45deg,#667eea,#764ba2);color:#fff;box-shadow:0 6px 18px -6px rgba(118,75,162,.55);}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 26px -6px rgba(118,75,162,.65);}
+.btn-secondary{background:linear-gradient(45deg,#ff6b6b,#ff944d);color:#fff;box-shadow:0 6px 18px -6px rgba(255,107,107,.55);}
+.btn-secondary:hover{transform:translateY(-2px);box-shadow:0 10px 26px -6px rgba(255,107,107,.65);}
+.btn-success{background:linear-gradient(45deg,#4ecdc4,#229b8c);color:#fff;box-shadow:0 6px 18px -6px rgba(78,205,196,.55);}
+.btn-success:hover{transform:translateY(-2px);box-shadow:0 10px 26px -6px rgba(78,205,196,.65);}
+.btn-outline{
+  background:rgba(255,255,255,.15);
+  color:#fff;
+  border:1px solid rgba(255,255,255,.35);
+}
+.btn-outline:hover{background:rgba(255,255,255,.25);}
 
-        @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
+.upload-options{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;}
+.file-input{display:none;}
+.file-label{
+  cursor:pointer;
+  padding:12px 20px;
+  border-radius:30px;
+  font-weight:600;
+  font-size:.9rem;
+  letter-spacing:.4px;
+  background:linear-gradient(45deg,#96ceb4,#ffeaa7);
+  color:#242424;
+  box-shadow:0 6px 20px -8px rgba(150,206,180,.6);
+  transition:.25s;
+  min-width:170px;
+  text-align:center;
+}
+.file-label.camera-label{background:linear-gradient(45deg,#ff6b6b,#ffa726);color:#fff;}
+.file-label:hover{transform:translateY(-2px);box-shadow:0 10px 28px -10px rgba(150,206,180,.75);}
+.file-label.camera-label:hover{box-shadow:0 10px 28px -10px rgba(255,107,107,.75);}
 
-        .subtitle {
-            font-size: 1.2rem;
-            margin-bottom: 30px;
-            color: rgba(255, 255, 255, 0.8);
-        }
+#uploadForm{text-align:center;display:none;}
+#uploadForm .btn-success{min-width:210px;}
 
-        .camera-container {
-            margin-bottom: 30px;
-            position: relative;
-        }
+.divider{
+  height:1px;
+  background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.35),rgba(255,255,255,0));
+  margin:-4px 0 4px;
+}
 
-        #video {
-            width: 100%;
-            max-width: 400px;
-            height: 300px;
-            border-radius: 15px;
-            object-fit: cover;
-            background: rgba(0, 0, 0, 0.3);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-        }
+.bulk-area{
+  border:2px dashed rgba(255,255,255,.35);
+  border-radius:22px;
+  padding:30px 20px;
+  text-align:center;
+  background:rgba(255,255,255,.06);
+  transition:.25s;
+  position:relative;
+}
+.bulk-area.dragover{background:rgba(255,255,255,.12);border-color:#fff;}
+.bulk-area input{display:none;}
+.bulk-area label{
+  display:inline-block;
+  padding:12px 24px;
+  margin-top:10px;
+  border-radius:28px;
+  background:linear-gradient(45deg,#6ef9d1,#a0f3ff);
+  color:#103b3a;
+  font-weight:600;
+  cursor:pointer;
+  letter-spacing:.4px;
+  font-size:.9rem;
+  transition:.25s;
+}
+.bulk-area label:hover{transform:translateY(-2px);box-shadow:0 10px 26px -8px rgba(110,249,209,.6);}
+.file-list{margin-top:18px;text-align:left;max-height:180px;overflow:auto;font-size:.75rem;line-height:1.3;}
+.file-list ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;}
+.file-list li{padding:10px 12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:12px;}
+.progress-wrap{margin-top:18px;}
+.progress-bar-bg{width:100%;height:14px;border-radius:8px;background:rgba(255,255,255,.15);overflow:hidden;}
+.progress-bar-fill{height:100%;width:0;background:linear-gradient(90deg,#4ecdc4,#229b8c);transition:width .25s;}
 
-        #canvas {
-            display: none;
-        }
+.bulk-actions{display:flex;justify-content:center;margin-top:16px;}
+.bulk-actions .btn-success{min-width:230px;}
 
-        .controls {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
+.back-link{
+  text-align:center;
+  display:inline-block;
+  margin-top:-4px;
+  color:rgba(255,255,255,.85);
+  text-decoration:none;
+  font-weight:500;
+  font-size:.9rem;
+  letter-spacing:.4px;
+}
+.back-link:hover{color:#fff;text-decoration:underline;}
 
-        .button-group {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 25px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            min-width: 120px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
-        }
-
-        .btn-secondary {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
-            color: white;
-            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
-        }
-
-        .btn-secondary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.6);
-        }
-
-        .btn-success {
-            background: linear-gradient(45deg, #4ecdc4, #44a08d);
-            color: white;
-            box-shadow: 0 5px 15px rgba(78, 205, 196, 0.4);
-        }
-
-        .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(78, 205, 196, 0.6);
-        }
-
-        .file-upload {
-            margin: 20px 0;
-        }
-
-        .upload-options {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .file-input {
-            display: none;
-        }
-
-        .file-label {
-            display: inline-block;
-            padding: 12px 24px;
-            background: linear-gradient(45deg, #96ceb4, #ffeaa7);
-            color: #333;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(150, 206, 180, 0.4);
-            min-width: 140px;
-            text-align: center;
-        }
-
-        .file-label:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(150, 206, 180, 0.6);
-        }
-
-        .camera-label {
-            background: linear-gradient(45deg, #ff6b6b, #ffa726);
-            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
-        }
-
-        .camera-label:hover {
-            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.6);
-        }
-
-        .preview-container {
-            margin: 20px 0;
-            display: none;
-        }
-
-        .preview-image {
-            max-width: 100%;
-            max-height: 300px;
-            border-radius: 15px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .flash-messages {
-            margin-bottom: 20px;
-        }
-
-        .flash-message {
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 10px;
-            font-weight: bold;
-        }
-
-        .flash-error {
-            background: rgba(255, 107, 107, 0.2);
-            border: 1px solid rgba(255, 107, 107, 0.5);
-            color: #ffcccb;
-        }
-
-        .flash-success {
-            background: rgba(78, 205, 196, 0.2);
-            border: 1px solid rgba(78, 205, 196, 0.5);
-            color: #c8f7f5;
-        }
-
-        .back-link {
-            margin-top: 20px;
-            display: block;
-            color: rgba(255, 255, 255, 0.8);
-            text-decoration: none;
-            font-size: 1rem;
-        }
-
-        .back-link:hover {
-            color: white;
-        }
-
-        @media (max-width: 480px) {
-            .upload-container {
-                padding: 20px;
-            }
-            
-            .title {
-                font-size: 2rem;
-            }
-            
-            .button-group {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .btn {
-                width: 100%;
-                max-width: 200px;
-            }
-            
-            .upload-options {
-                flex-direction: column;
-                align-items: center;
-                gap: 10px;
-            }
-            
-            .file-label, .camera-label {
-                min-width: auto;
-                width: 100%;
-                max-width: 250px;
-            }
-        }
-    </style>
+@media (max-width:560px){
+  .upload-container{padding:30px 22px 40px;border-radius:26px;}
+  .title{font-size:2rem;}
+  #video,.preview-image{height:260px;}
+  .file-label{min-width:140px;font-size:.8rem;padding:10px 16px;}
+  .bulk-area{padding:26px 16px;}
+  .upload-container{gap:22px;}
+}
+</style>
 </head>
 <body>
-    <div class="upload-container">
-        <h1 class="title">Take a Photo</h1>
-        <p class="subtitle">Share your moment at SFC 30!</p>
-
-        <!-- Flash messages -->
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <div class="flash-messages">
-                    {% for message in messages %}
-                        {% if "Error" in message or "Invalid" in message %}
-                            <div class="flash-message flash-error">{{ message }}</div>
-                        {% else %}
-                            <div class="flash-message flash-success">{{ message }}</div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
-
-        <!-- Camera section -->
-        <div class="camera-container">
-            <video id="video" autoplay playsinline></video>
-            <canvas id="canvas"></canvas>
-        </div>
-
-        <!-- Preview section -->
-        <div class="preview-container" id="previewContainer">
-            <img id="previewImage" class="preview-image" alt="Preview">
-        </div>
-
-        <!-- Controls -->
-        <div class="controls">
-            <div class="button-group">
-                <button id="startCamera" class="btn btn-primary">Start Camera</button>
-                <button id="captureBtn" class="btn btn-secondary" style="display: none;">Take Photo</button>
-                <button id="retakeBtn" class="btn btn-primary" style="display: none;">Retake</button>
-            </div>
-
-            <!-- File upload option -->
-            <div class="file-upload">
-                <div class="upload-options">
-                    <label for="galleryInput" class="file-label">
-                        📁 Choose from Gallery
-                    </label>
-                    <input type="file" id="galleryInput" name="file" accept="image/*" class="file-input">
-                    
-                    <label for="cameraInput" class="file-label camera-label">
-                        📸 Take Photo
-                    </label>
-                    <input type="file" id="cameraInput" name="file" accept="image/*" capture="environment" class="file-input">
-                </div>
-            </div>
-
-            <!-- Upload form -->
-            <form id="uploadForm" method="POST" enctype="multipart/form-data" style="display: none;">
-                <input type="file" id="hiddenFileInput" name="file" style="display: none;">
-                <button type="submit" class="btn btn-success">Upload Photo</button>
-            </form>
-        </div>
-
-        <a href="{{ url_for('main') }}" class="back-link">← Back to Gallery</a>
+  <div class="upload-container">
+    <div>
+      <h1 class="title">Take a Photo</h1>
+      <p class="subtitle">Share your moment at SFC 30!</p>
+      {% with messages = get_flashed_messages() %}
+      {% if messages %}
+      <div class="flash-messages">
+        {% for message in messages %}
+          {% if "Error" in message or "Invalid" in message %}
+            <div class="flash-message flash-error">{{ message }}</div>
+          {% else %}
+            <div class="flash-message flash-success">{{ message }}</div>
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endwith %}
     </div>
 
-    <script>
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const startCameraBtn = document.getElementById('startCamera');
-        const captureBtn = document.getElementById('captureBtn');
-        const retakeBtn = document.getElementById('retakeBtn');
-        const previewContainer = document.getElementById('previewContainer');
-        const previewImage = document.getElementById('previewImage');
-        const galleryInput = document.getElementById('galleryInput');
-        const cameraInput = document.getElementById('cameraInput');
-        const uploadForm = document.getElementById('uploadForm');
-        const hiddenFileInput = document.getElementById('hiddenFileInput');
+    <!-- Single photo / camera capture -->
+    <div class="section" id="singleSection">
+      <h2>📷 Capture or Select One</h2>
+      <div class="camera-container">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas"></canvas>
+      </div>
+      <div class="preview-container" id="previewContainer">
+        <img id="previewImage" class="preview-image" alt="Preview">
+      </div>
+      <div class="button-group">
+        <button id="startCamera" class="btn btn-primary">Start Camera</button>
+        <button id="captureBtn" class="btn btn-secondary" style="display:none;">Take Photo</button>
+        <button id="retakeBtn" class="btn btn-primary" style="display:none;">Retake</button>
+      </div>
+      <div class="upload-options">
+        <label for="galleryInput" class="file-label">📁 Choose from Gallery</label>
+        <input type="file" id="galleryInput" accept="image/*" class="file-input">
+        <label for="cameraInput" class="file-label camera-label">📸 Take Photo</label>
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" class="file-input">
+      </div>
+      <form id="uploadForm" method="POST" enctype="multipart/form-data" style="display:none;">
+        <input type="file" id="hiddenFileInput" name="file" hidden>
+        <button type="submit" class="btn btn-success">Upload Photo</button>
+      </form>
+    </div>
 
-        let stream = null;
+    <!-- Bulk upload -->
+    <div class="section" id="bulkSection">
+      <h2>🗂 Bulk Upload</h2>
+      <div class="bulk-area" id="dropArea">
+        <p style="font-size:.9rem;line-height:1.4;">
+          Drag & drop multiple images here<br>or
+        </p>
+        <label for="multiInput">Select Photos</label>
+        <input type="file" id="multiInput" name="files[]" multiple accept="image/*">
+        <div class="file-list" id="fileList" style="display:none;"></div>
+        <div class="progress-wrap" id="progressWrap" style="display:none;">
+          <div class="progress-bar-bg"><div class="progress-bar-fill" id="bulkProgress"></div></div>
+        </div>
+        <div class="bulk-actions" id="bulkActions" style="display:none;">
+          <button id="bulkUploadBtn" class="btn btn-success" type="button">Upload Selected</button>
+        </div>
+      </div>
+    </div>
 
-        // Start camera
-        startCameraBtn.addEventListener('click', async () => {
-            try {
-                // Try to get back camera first, fallback to any camera
-                const constraints = {
-                    video: {
-                        facingMode: { ideal: 'environment' },
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    }
-                };
+    <a href="{{ url_for('main') }}" class="back-link">← Back to Slideshow</a>
+  </div>
 
-                stream = await navigator.mediaDevices.getUserMedia(constraints);
-                video.srcObject = stream;
-                
-                startCameraBtn.style.display = 'none';
-                captureBtn.style.display = 'inline-block';
-                previewContainer.style.display = 'none';
-                video.style.display = 'block';
-            } catch (error) {
-                console.error('Error accessing camera:', error);
-                alert('Could not access camera. Please check permissions or use file upload.');
-            }
-        });
+<script>
+/* Camera + single file logic */
+const video=document.getElementById('video');
+const canvas=document.getElementById('canvas');
+const startCameraBtn=document.getElementById('startCamera');
+const captureBtn=document.getElementById('captureBtn');
+const retakeBtn=document.getElementById('retakeBtn');
+const previewContainer=document.getElementById('previewContainer');
+const previewImage=document.getElementById('previewImage');
+const galleryInput=document.getElementById('galleryInput');
+const cameraInput=document.getElementById('cameraInput');
+const uploadForm=document.getElementById('uploadForm');
+const hiddenFileInput=document.getElementById('hiddenFileInput');
 
-        // Capture photo
-        captureBtn.addEventListener('click', () => {
-            const context = canvas.getContext('2d');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            
-            context.drawImage(video, 0, 0);
-            
-            // Convert to blob and show preview
-            canvas.toBlob((blob) => {
-                const url = URL.createObjectURL(blob);
-                previewImage.src = url;
-                previewContainer.style.display = 'block';
-                video.style.display = 'none';
-                
-                captureBtn.style.display = 'none';
-                retakeBtn.style.display = 'inline-block';
-                uploadForm.style.display = 'block';
+let stream=null;
 
-                // Create file for upload
-                const file = new File([blob], 'camera_photo.jpg', { type: 'image/jpeg' });
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(file);
-                hiddenFileInput.files = dataTransfer.files;
-            }, 'image/jpeg', 0.8);
-        });
+startCameraBtn.addEventListener('click',async ()=>{
+  try{
+    const constraints={video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}};
+    stream=await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject=stream;
+    startCameraBtn.style.display='none';
+    captureBtn.style.display='inline-flex';
+    previewContainer.style.display='none';
+    video.style.display='block';
+  }catch(err){
+    console.error(err);
+    alert('Could not access camera. Please check permissions or use file upload.');
+  }
+});
 
-        // Retake photo
-        retakeBtn.addEventListener('click', () => {
-            previewContainer.style.display = 'none';
-            video.style.display = 'block';
-            captureBtn.style.display = 'inline-block';
-            retakeBtn.style.display = 'none';
-            uploadForm.style.display = 'none';
-        });
+captureBtn.addEventListener('click',()=>{
+  const ctx=canvas.getContext('2d');
+  canvas.width=video.videoWidth;
+  canvas.height=video.videoHeight;
+  ctx.drawImage(video,0,0);
+  canvas.toBlob(blob=>{
+    const url=URL.createObjectURL(blob);
+    previewImage.src=url;
+    previewContainer.style.display='block';
+    video.style.display='none';
+    captureBtn.style.display='none';
+    retakeBtn.style.display='inline-flex';
+    uploadForm.style.display='block';
+    const file=new File([blob],'camera_photo.jpg',{type:'image/jpeg'});
+    const dt=new DataTransfer();
+    dt.items.add(file);
+    hiddenFileInput.files=dt.files;
+  },'image/jpeg',0.85);
+});
 
-        // File input handler function
-        function handleFileInput(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    previewImage.src = e.target.result;
-                    previewContainer.style.display = 'block';
-                    video.style.display = 'none';
-                    
-                    // Stop camera if running
-                    if (stream) {
-                        stream.getTracks().forEach(track => track.stop());
-                        stream = null;
-                    }
-                    
-                    startCameraBtn.style.display = 'none';
-                    captureBtn.style.display = 'none';
-                    retakeBtn.style.display = 'inline-block';
-                    uploadForm.style.display = 'block';
+retakeBtn.addEventListener('click',()=>{
+  previewContainer.style.display='none';
+  video.style.display='block';
+  captureBtn.style.display='inline-flex';
+  retakeBtn.style.display='none';
+  uploadForm.style.display='none';
+});
 
-                    // Set file for upload
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(file);
-                    hiddenFileInput.files = dataTransfer.files;
-                };
-                reader.readAsDataURL(file);
-            }
-        }
+function handleSingleFile(file){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    previewImage.src=e.target.result;
+    previewContainer.style.display='block';
+    video.style.display='none';
+    if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+    startCameraBtn.style.display='none';
+    captureBtn.style.display='none';
+    retakeBtn.style.display='inline-flex';
+    uploadForm.style.display='block';
+    const dt=new DataTransfer();
+    dt.items.add(file);
+    hiddenFileInput.files=dt.files;
+  };
+  reader.readAsDataURL(file);
+}
+galleryInput.addEventListener('change',e=>{if(e.target.files[0]) handleSingleFile(e.target.files[0]);});
+cameraInput.addEventListener('change',e=>{if(e.target.files[0]) handleSingleFile(e.target.files[0]);});
+window.addEventListener('beforeunload',()=>{if(stream) stream.getTracks().forEach(t=>t.stop());});
 
-        // Gallery input handler (no camera capture)
-        galleryInput.addEventListener('change', handleFileInput);
-        
-        // Camera input handler (with camera capture)
-        cameraInput.addEventListener('change', handleFileInput);
+/* Bulk upload logic */
+const dropArea=document.getElementById('dropArea');
+const multiInput=document.getElementById('multiInput');
+const fileListEl=document.getElementById('fileList');
+const progressWrap=document.getElementById('progressWrap');
+const progressBar=document.getElementById('bulkProgress');
+const bulkActions=document.getElementById('bulkActions');
+const bulkUploadBtn=document.getElementById('bulkUploadBtn');
 
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', () => {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
-        });
-    </script>
+function showFiles(files){
+  if(!files.length){fileListEl.style.display='none';bulkActions.style.display='none';return;}
+  fileListEl.innerHTML='';
+  const ul=document.createElement('ul');
+  files.forEach(f=>{
+    const li=document.createElement('li');
+    const size=(f.size/1024/1024).toFixed(2);
+    li.innerHTML='<strong>'+f.name+'</strong><br><small>'+size+' MB • '+(f.type||'')+'</small>';
+    ul.appendChild(li);
+  });
+  fileListEl.appendChild(ul);
+  fileListEl.style.display='block';
+  bulkActions.style.display='flex';
+}
+multiInput.addEventListener('change',e=>showFiles([...e.target.files]));
 
-    <!-- Add this JavaScript to upload.html for better user feedback -->
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const fileInput = document.getElementById('file-input');
-        const fileList = document.getElementById('file-list');
-        
-        fileInput.addEventListener('change', function(e) {
-            displaySelectedFiles(e.target.files);
-        });
-        
-        function displaySelectedFiles(files) {
-            if (!fileList) return;
-            
-            fileList.innerHTML = '';
-            
-            if (files.length === 0) {
-                fileList.innerHTML = '<p>No files selected</p>';
-                return;
-            }
-            
-            const ul = document.createElement('ul');
-            ul.style.listStyle = 'none';
-            ul.style.padding = '0';
-            
-            Array.from(files).forEach(file => {
-                const li = document.createElement('li');
-                li.style.margin = '5px 0';
-                li.style.padding = '10px';
-                li.style.background = 'rgba(255,255,255,0.1)';
-                li.style.borderRadius = '5px';
-                
-                const fileSize = (file.size / (1024 * 1024)).toFixed(2);
-                li.innerHTML = `
-                    <strong>${file.name}</strong><br>
-                    <small>Size: ${fileSize} MB | Type: ${file.type}</small>
-                `;
-                ul.appendChild(li);
-            });
-            
-            fileList.appendChild(ul);
-        }
-    });
-
-    // Enhanced upload progress
-    function uploadFiles() {
-        const fileInput = document.getElementById('file-input');
-        const files = fileInput.files;
-        
-        if (files.length === 0) {
-            alert('Please select files to upload');
-            return false;
-        }
-        
-        // Show upload progress
-        const submitBtn = document.querySelector('button[type="submit"]');
-        const originalText = submitBtn.textContent;
-        submitBtn.textContent = 'Uploading...';
-        submitBtn.disabled = true;
-        
-        // Create progress indicator
-        const progressDiv = document.createElement('div');
-        progressDiv.innerHTML = `
-            <div style="margin: 20px 0; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 10px; text-align: center;">
-                <div style="margin-bottom: 10px;">📤 Uploading ${files.length} files...</div>
-                <div style="background: rgba(255,255,255,0.2); height: 20px; border-radius: 10px; overflow: hidden;">
-                    <div id="progress-bar" style="background: linear-gradient(45deg, #4CAF50, #45a049); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
-                </div>
-                <div style="margin-top: 10px; font-size: 14px;">Checking for duplicates and processing...</div>
-            </div>
-        `;
-        
-        const form = document.querySelector('form');
-        form.appendChild(progressDiv);
-        
-        // Simulate progress (since we can't track server-side duplicate checking)
-        let progress = 0;
-        const progressBar = document.getElementById('progress-bar');
-        const progressInterval = setInterval(() => {
-            progress += Math.random() * 15;
-            if (progress > 90) progress = 90;
-            progressBar.style.width = progress + '%';
-        }, 200);
-        
-        // Clean up on form submission
-        setTimeout(() => {
-            clearInterval(progressInterval);
-            progressBar.style.width = '100%';
-        }, 1000);
-        
-        return true;
+['dragenter','dragover'].forEach(evt=>{
+  dropArea.addEventListener(evt,e=>{
+    e.preventDefault();e.stopPropagation();
+    dropArea.classList.add('dragover');
+  });
+});
+['dragleave','drop'].forEach(evt=>{
+  dropArea.addEventListener(evt,e=>{
+    e.preventDefault();e.stopPropagation();
+    if(evt==='drop'){
+      const files=[...e.dataTransfer.files].filter(f=>/^image\//.test(f.type));
+      if(files.length){
+        const dt=new DataTransfer();
+        files.forEach(f=>dt.items.add(f));
+        multiInput.files=dt.files;
+        showFiles(files);
+      }
     }
-    </script>
+    dropArea.classList.remove('dragover');
+  });
+});
 
-    <!-- Add to the upload form -->
-    <form action="/upload" method="post" enctype="multipart/form-data" onsubmit="return uploadFiles()">
-        <div class="upload-area">
-            <input type="file" id="file-input" name="files[]" multiple accept="image/*" style="display: none;">
-            <label for="file-input" class="upload-label">
-                📸 Click to select photos or drag & drop
-            </label>
-        </div>
-        
-        <div id="file-list" style="margin: 20px 0;">
-            <!-- Selected files will be displayed here -->
-        </div>
-        
-        <button type="submit" class="upload-btn">
-            🚀 Upload Photos
-        </button>
-    </form>
+bulkUploadBtn.addEventListener('click',async ()=>{
+  const files=[...multiInput.files];
+  if(!files.length){alert('Select images first');return;}
+  progressWrap.style.display='block';
+  progressBar.style.width='0%';
+  bulkUploadBtn.disabled=true;bulkUploadBtn.textContent='Uploading...';
+
+  // Progressive upload one by one (simple)
+  for(let i=0;i<files.length;i++){
+    const formData=new FormData();
+    formData.append('file',files[i]); // server expects 'file' (adjust if using files[])
+    try{
+      await fetch('/upload',{method:'POST',body:formData});
+    }catch(err){console.error('Upload failed',files[i].name,err);}
+    const pct=Math.round(((i+1)/files.length)*100);
+    progressBar.style.width=pct+'%';
+  }
+  bulkUploadBtn.textContent='Done!';
+  setTimeout(()=>{bulkUploadBtn.disabled=false;bulkUploadBtn.textContent='Upload Selected';},1800);
+});
+
+/* Prevent default page scroll on space when focusing buttons */
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space' && document.activeElement.tagName==='BUTTON'){e.preventDefault();}
+});
+</script>
 </body>
 </html>
