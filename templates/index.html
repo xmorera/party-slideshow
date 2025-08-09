@@ -3,159 +3,56 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-<title>🎉 SFC 30 Party - Live Slideshow</title>
+<title>SFC 30 Party - Live Slideshow</title>
 <meta name="color-scheme" content="light">
 <style>
     * { box-sizing:border-box; margin:0; padding:0; }
-    body {
-        font-family:"Segoe UI",system-ui,sans-serif;
-        background:#ffffff;
-        min-height:100vh;
-        overflow:hidden;
-        color:#111;
-        -webkit-font-smoothing:antialiased;
-    }
+    body { font-family:"Segoe UI",system-ui,sans-serif; background:#fff; min-height:100vh; overflow:hidden; color:#111; }
+    a,button{cursor:pointer;}
 
-    a, button { cursor:pointer; }
+    .nav-buttons{position:fixed;top:20px;right:20px;display:flex;gap:10px;z-index:1000;}
+    .nav-btn{font-size:14px;font-weight:500;padding:12px 18px;border-radius:25px;color:#111;text-decoration:none;transition:.25s;background:rgba(0,0,0,.05);}
+    .nav-btn:hover{transform:translateY(-2px);background:rgba(0,0,0,.12);}
 
-    .nav-buttons {
-        position:fixed; top:20px; right:20px; display:flex; gap:10px; z-index:1000;
-    }
-    .nav-btn {
-        font-size:14px; font-weight:500; padding:12px 18px; border-radius:25px;
-        color:#111; text-decoration:none; transition:.25s;
-        background:rgba(0,0,0,0.05);
-    }
-    .nav-btn:hover { transform:translateY(-2px); background:rgba(0,0,0,.12); }
+    .title-overlay{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:14px 32px;border-radius:28px;text-align:center;z-index:900;background:rgba(0,0,0,.04);}
+    .main-title{font-size:2.1rem;font-weight:700;line-height:1.1;background:linear-gradient(45deg,#d97706,#ea580c,#db2777);-webkit-background-clip:text;background-clip:text;color:transparent;margin:0;}
 
-    .title-overlay {
-        position:fixed; top:20px; left:50%; transform:translateX(-50%);
-        padding:14px 32px; border-radius:28px; text-align:center; z-index:900;
-        background:rgba(0,0,0,0.04);
-    }
-    .main-title {
-        font-size:2.1rem; font-weight:700; line-height:1.1;
-        background:linear-gradient(45deg,#d97706,#ea580c,#db2777);
-        -webkit-background-clip:text; background-clip:text; color:transparent;
-        margin-bottom:0;
-    }
+    .loading-overlay{position:fixed;inset:0;display:flex;flex-direction:column;gap:18px;align-items:center;justify-content:center;text-align:center;z-index:3000;background:#fff;color:#111;}
+    .spinner{width:46px;height:46px;border-radius:50%;border:4px solid rgba(0,0,0,.15);border-top:4px solid #111;animation:spin 1s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
 
-    .loading-overlay {
-        position:fixed; inset:0; display:flex; flex-direction:column; gap:18px;
-        align-items:center; justify-content:center; text-align:center; z-index:3000;
-        background:#ffffff;
-        color:#111;
-    }
-    .spinner {
-        width:46px; height:46px; border-radius:50%;
-        border:4px solid rgba(0,0,0,.15);
-        border-top:4px solid #111; animation:spin 1s linear infinite;
-    }
-    @keyframes spin { to { transform:rotate(360deg);} }
+    .carousel-container{position:fixed;top:50%;left:0;width:100%;height:50vh;transform:translateY(-50%);overflow:hidden;padding:20px;display:flex;align-items:center;}
+    .carousel-viewport{position:relative;width:100%;height:100%;overflow:hidden;}
+    .carousel-track{display:flex;height:100%;will-change:transform;gap:20px;}
+    .carousel-segment{display:flex;gap:20px;height:100%;}
+    .carousel-item{flex:0 0 300px;height:100%;position:relative;border-radius:16px;overflow:hidden;background:#f1f1f1;border:1px solid #e2e2e2;transition:transform .4s,box-shadow .4s;}
+    .carousel-item img{width:100%;height:100%;object-fit:cover;display:block;user-select:none;-webkit-user-drag:none;}
+    .carousel-item:hover{transform:scale(1.05);box-shadow:0 12px 30px -8px rgba(0,0,0,.25);z-index:10;}
 
-    .carousel-container {
-        position:fixed; top:50%; left:0; width:100%; height:50vh;
-        transform:translateY(-50%);
-        overflow:hidden; padding:20px;
-        display:flex; align-items:center;
-    }
-    .carousel-viewport { position:relative; width:100%; height:100%; overflow:hidden; }
-    .carousel-track { display:flex; height:100%; will-change:transform; gap:20px; }
-    .carousel-segment { display:flex; gap:20px; height:100%; }
-    .carousel-item {
-        flex:0 0 300px; height:100%; position:relative; border-radius:16px;
-        overflow:hidden; background:#f1f1f1;
-        border:1px solid #e2e2e2;
-        transition:transform .4s, box-shadow .4s;
-    }
-    .carousel-item img {
-        width:100%; height:100%; object-fit:cover; display:block;
-        user-select:none; -webkit-user-drag:none;
-    }
-    .carousel-item:hover {
-        transform:scale(1.05);
-        box-shadow:0 12px 30px -8px rgba(0,0,0,.25);
-        z-index:10;
-    }
+    .speed-controls{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:950;background:rgba(0,0,0,.04);padding:8px 14px;border-radius:28px;backdrop-filter:blur(6px);}
+    .speed-btn{font-size:13px;padding:8px 14px;border-radius:18px;border:0;color:#111;background:rgba(0,0,0,.06);transition:background .25s,color .25s;}
+    .speed-btn:hover{background:rgba(0,0,0,.12);}
+    .speed-btn.active{background:#111;color:#fff;}
 
-    /* Speed controls moved to bottom center in a row */
-    .speed-controls {
-        position:fixed;
-        bottom:26px;
-        left:50%;
-        transform:translateX(-50%);
-        display:flex;
-        flex-direction:row;
-        gap:10px;
-        z-index:950;
-        background:rgba(0,0,0,0.04);
-        padding:8px 14px;
-        border-radius:28px;
-        backdrop-filter:blur(6px);
-    }
-    .speed-btn {
-        font-size:13px; padding:8px 14px; border-radius:18px;
-        border:0; color:#111; background:rgba(0,0,0,0.06);
-        transition:background .25s, color .25s;
-    }
-    .speed-btn:hover { background:rgba(0,0,0,.12); }
-    .speed-btn.active { background:#111; color:#fff; }
+    .carousel-controls{display:none !important;} /* hidden controls */
 
-    /* Hide old bottom manual controls */
-    .carousel-controls { display:none !important; }
+    .image-counter{position:fixed;bottom:26px;right:26px;padding:10px 18px;font-size:14px;border-radius:22px;z-index:950;background:rgba(0,0,0,.06);color:#111;border:1px solid rgba(0,0,0,.08);}
 
-    .image-counter {
-        position:fixed; bottom:26px; right:26px;
-        padding:10px 18px; font-size:14px; border-radius:22px; z-index:950;
-        background:rgba(0,0,0,0.06);
-        color:#111;
-        border:1px solid rgba(0,0,0,0.08);
-    }
+    .image-popup{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);backdrop-filter:blur(14px);opacity:0;pointer-events:none;transition:opacity .3s;z-index:4000;}
+    .image-popup.open{opacity:1;pointer-events:all;}
+    .popup-content{max-width:88vw;max-height:88vh;position:relative;}
+    .popup-content img{width:100%;max-height:88vh;object-fit:contain;border-radius:12px;display:block;}
+    .close-popup{position:absolute;top:10px;right:10px;width:44px;height:44px;border-radius:50%;border:0;font-size:26px;line-height:1;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;transition:.25s;}
+    .close-popup:hover{background:rgba(0,0,0,.75);}
 
-    .image-popup {
-        position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-        background:rgba(0,0,0,.85); backdrop-filter: blur(14px);
-        opacity:0; pointer-events:none; transition:opacity .3s; z-index:4000;
-    }
-    .image-popup.open { opacity:1; pointer-events:all; }
-    .popup-content { max-width:88vw; max-height:88vh; position:relative; }
-    .popup-content img { width:100%; max-height:88vh; object-fit:contain; border-radius:12px; display:block; }
-    .close-popup {
-        position:absolute; top:10px; right:10px; width:44px; height:44px;
-        border-radius:50%; border:0; font-size:26px; line-height:1;
-        background:rgba(0,0,0,.55); color:#fff; cursor:pointer; transition:.25s;
-    }
-    .close-popup:hover { background:rgba(0,0,0,.75); }
+    .toast{position:fixed;top:100px;left:50%;transform:translateX(-50%);padding:14px 30px;border-radius:26px;font-size:15px;animation:fadeSlide 3.2s forwards;z-index:3600;background:linear-gradient(135deg,#16a34a,#059669);color:#fff;box-shadow:0 8px 24px -6px rgba(0,0,0,.25);}
+    @keyframes fadeSlide{0%{opacity:0;transform:translate(-50%,-10px);}10%,80%{opacity:1;transform:translate(-50%,0);}100%{opacity:0;transform:translate(-50%,-6px);}}
 
-    .toast {
-        position:fixed; top:100px; left:50%; transform:translateX(-50%);
-        padding:14px 30px; border-radius:26px; font-size:15px;
-        animation:fadeSlide 3.2s forwards; z-index:3600;
-        background:linear-gradient(135deg,#16a34a,#059669);
-        color:#fff;
-        box-shadow:0 8px 24px -6px rgba(0,0,0,.25);
-    }
-    @keyframes fadeSlide {
-        0% { opacity:0; transform:translate(-50%, -10px); }
-        10%,80% { opacity:1; transform:translate(-50%, 0); }
-        100% { opacity:0; transform:translate(-50%, -6px); }
-    }
-
-    @media (max-width:900px){
-        .carousel-item { flex-basis:260px; }
-        .main-title { font-size:1.7rem; }
-    }
-    @media (max-width:600px){
-        .carousel-container { height:45vh; padding:12px; }
-        .carousel-item { flex-basis:220px; }
-        .speed-controls { bottom:20px; padding:6px 10px; gap:6px; }
-        .speed-btn { padding:6px 10px; font-size:12px; }
-        .image-counter { bottom:20px; right:18px; font-size:12px; padding:7px 14px; }
-    }
+    @media (max-width:900px){.carousel-item{flex-basis:260px;}.main-title{font-size:1.7rem;}}
+    @media (max-width:600px){.carousel-container{height:45vh;padding:12px;}.carousel-item{flex-basis:220px;}.speed-controls{bottom:20px;padding:6px 10px;gap:6px;}.speed-btn{padding:6px 10px;font-size:12px;}.image-counter{bottom:20px;right:18px;font-size:12px;padding:7px 14px;}}
 </style>
 </head>
 <body>
-    <!-- Loading -->
     <div id="loading-overlay" class="loading-overlay">
         <div class="spinner"></div>
         <h2>Loading Party Photos...</h2>
@@ -163,14 +60,12 @@
     </div>
 
     <div class="nav-buttons">
-        <a class="nav-btn" href="/upload" title="Upload new photos">📤 Upload</a>
+        <a class="nav-btn" href="/upload">📤 Upload</a>
+        <a class="nav-btn" href="/all">🗂 All Photos</a>
     </div>
 
-    <div class="title-overlay">
-        <h1 class="main-title">SFC 30</h1>
-    </div>
+    <div class="title-overlay"><h1 class="main-title">SFC 30</h1></div>
 
-    <!-- Speed controls now bottom center in a row -->
     <div class="speed-controls">
         <button class="speed-btn" data-seconds="8">8s</button>
         <button class="speed-btn active" data-seconds="5">5s</button>
@@ -178,16 +73,12 @@
         <button class="speed-btn" data-seconds="2">2s</button>
     </div>
 
-    <!-- Carousel -->
     <div class="carousel-container">
         <div class="carousel-viewport" id="carousel-viewport">
-            <div class="carousel-track" id="carousel-track">
-                <!-- Two segments (base + clone) inserted dynamically -->
-            </div>
+            <div class="carousel-track" id="carousel-track"></div>
         </div>
     </div>
 
-    <!-- Controls block kept in DOM but hidden via CSS (for easy restore) -->
     <div class="carousel-controls" aria-hidden="true">
         <button class="control-btn" id="prev-btn">⏮️</button>
         <button class="control-btn" id="pause-btn">⏸️</button>
@@ -198,7 +89,6 @@
 
     <div class="image-counter" id="image-counter">0 photos</div>
 
-    <!-- Popup -->
     <div class="image-popup" id="image-popup" aria-modal="true" role="dialog">
         <div class="popup-content">
             <img id="popup-image" alt="Enlarged photo" decoding="async" />
@@ -207,189 +97,99 @@
     </div>
 
 <script>
-/*
-  Improved carousel logic:
-  - Single base segment of images + one cloned segment for seamless looping.
-  - requestAnimationFrame drives smooth scrolling (no large duplicated DOM multiples).
-  - Speed defined in seconds per image (width + gap).
-  - Manual navigation adjusts logical offset & pauses auto-scroll briefly.
-  - New images fetched every minute; only new ones appended (no full rebuild unless needed).
-*/
+let imageUrls=[],secondsPerImage=5,gap=20,itemWidth=300,isPaused=false,isReversed=false;
+let animationId=null,offsetPx=0,lastTs=0,speedPxPerSec=calcSpeed(),baseSegmentWidth=0,fetching=false,lastBuildCount=0;
 
-let imageUrls = [];                  // Unique image URL list (base set)
-let secondsPerImage = 5;             // Default view time per image
-let gap = 20;                        // Gap (matches CSS .carousel-track gap)
-let itemWidth = 300;                 // Base width (matches CSS .carousel-item flex-basis)
-let isPaused = false;
-let isReversed = false;
-let autoResumeTimer = null;
-let animationId = null;
-let offsetPx = 0;                    // Current translation offset
-let lastTs = 0;
-let speedPxPerSec = calcSpeed();     // Computed pixels/second
-let baseSegmentWidth = 0;            // Width of a single segment
-let fetching = false;
-let lastBuildCount = 0;
+const track=document.getElementById('carousel-track');
+const loadingOverlay=document.getElementById('loading-overlay');
+const counterEl=document.getElementById('image-counter');
+const popup=document.getElementById('image-popup');
+const popupImg=document.getElementById('popup-image');
+/* (Controls may be hidden; reference safely) */
+const pauseBtn=document.getElementById('pause-btn');
+const directionBtn=document.getElementById('direction-btn');
+const prevBtn=document.getElementById('prev-btn');
+const nextBtn=document.getElementById('next-btn');
+const refreshBtn=document.getElementById('refresh-btn');
 
-const track = document.getElementById('carousel-track');
-const loadingOverlay = document.getElementById('loading-overlay');
-const counterEl = document.getElementById('image-counter');
-const popup = document.getElementById('image-popup');
-const popupImg = document.getElementById('popup-image');
+function calcSpeed(){return (itemWidth+gap)/secondsPerImage;}
+function showLoading(){loadingOverlay.style.display='flex';}
+function hideLoading(){loadingOverlay.style.display='none';}
+function updateCounter(){counterEl.textContent=`${imageUrls.length} photo${imageUrls.length===1?'':'s'}`;}
+function createToast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3200);}
+function altFromUrl(url){try{const n=url.split('/').pop().split('?')[0];return n.replace(/[-_]/g,' ').replace(/\.[^.]+$/,'');}catch{return'Party image';}}
 
-function calcSpeed() {
-    return (itemWidth + gap) / secondsPerImage;
+function buildTrack(appendOnly=false){
+  if(appendOnly&&track.children.length===2){
+    const baseSeg=track.children[0],cloneSeg=track.children[1];
+    const existing=baseSeg.querySelectorAll('.carousel-item').length;
+    for(let i=existing;i<imageUrls.length;i++) baseSeg.appendChild(createItem(imageUrls[i],i));
+    cloneSeg.innerHTML='';
+    imageUrls.forEach((u,i)=>cloneSeg.appendChild(createItem(u,i,true)));
+  }else{
+    track.innerHTML='';
+    const baseSeg=document.createElement('div');baseSeg.className='carousel-segment';
+    imageUrls.forEach((u,i)=>baseSeg.appendChild(createItem(u,i)));
+    const cloneSeg=document.createElement('div');cloneSeg.className='carousel-segment';
+    imageUrls.forEach((u,i)=>cloneSeg.appendChild(createItem(u,i,true)));
+    track.appendChild(baseSeg);track.appendChild(cloneSeg);offsetPx=0;
+  }
+  baseSegmentWidth=imageUrls.length*(itemWidth+gap);
+  lastBuildCount=imageUrls.length;
+}
+function createItem(url,index){
+  const btn=document.createElement('button');btn.type='button';btn.className='carousel-item';btn.setAttribute('aria-label',`Open image ${index+1}`);
+  btn.addEventListener('click',()=>openPopup(url));
+  const img=document.createElement('img');img.src=url;img.alt=altFromUrl(url);img.loading='lazy';img.decoding='async';
+  img.onerror=()=>{btn.style.background='#f87171';btn.textContent='Failed';};
+  btn.appendChild(img);return btn;
 }
 
-function showLoading() { loadingOverlay.style.display = 'flex'; }
-function hideLoading() { loadingOverlay.style.display = 'none'; }
+function animate(ts){
+  if(!lastTs) lastTs=ts;
+  const dt=(ts-lastTs)/1000;lastTs=ts;
+  if(!isPaused&&baseSegmentWidth>0){
+    const dir=isReversed?1:-1;
+    offsetPx+=dir*speedPxPerSec*dt;
+    if(offsetPx<=-baseSegmentWidth) offsetPx+=baseSegmentWidth;
+    else if(offsetPx>=0) offsetPx-=baseSegmentWidth;
+    track.style.transform=`translateX(${offsetPx}px)`;
+  }
+  animationId=requestAnimationFrame(animate);
+}
+function setSecondsPerImage(s){
+  secondsPerImage=s;speedPxPerSec=calcSpeed();
+  document.querySelectorAll('.speed-btn').forEach(b=>b.classList.toggle('active',Number(b.dataset.seconds)===secondsPerImage));
+}
+function openPopup(url){popupImg.src=url;popup.classList.add('open');isPaused=true;}
+function closePopup(){popup.classList.remove('open');isPaused=false;}
 
-function updateCounter() {
-    counterEl.textContent = `${imageUrls.length} photo${imageUrls.length === 1 ? '' : 's'}`;
+function togglePause(){
+  isPaused=!isPaused;
+  pauseBtn.textContent=isPaused?'▶️':'⏸️';
+  pauseBtn.title=isPaused?'Play (Space)':'Pause (Space)';
+}
+function toggleDirection(){
+  isReversed=!isReversed;
+  directionBtn.textContent=isReversed?'↩️':'🔄';
 }
 
-function createToast(msg) {
-    const t = document.createElement('div');
-    t.className = 'toast';
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 3200);
+function pauseAutoTemp(fromPopup=false){
+  isPaused=true;
+  pauseBtn.textContent='▶️';
+  if(!fromPopup){
+    if(autoResumeTimer) clearTimeout(autoResumeTimer);
+    autoResumeTimer=setTimeout(()=>{
+      isPaused=false;
+      pauseBtn.textContent='⏸️';
+    },3000);
+  }
+}
+function resumeAfterTemp(){
+  isPaused=false;
+  pauseBtn.textContent='⏸️';
 }
 
-function altFromUrl(url) {
-    try {
-        const name = url.split('/').pop().split('?')[0];
-        return name.replace(/[-_]/g,' ').replace(/\.[^.]+$/,'');
-    } catch { return 'Party image'; }
-}
-
-/* Build (or rebuild) the track: base + clone */
-function buildTrack(appendOnly=false) {
-    // If we are only appending a few new images, append to base segment & then rebuild clone.
-    if (appendOnly && track.children.length === 2) {
-        const baseSeg = track.children[0];
-        const cloneSeg = track.children[1];
-        // Add new image elements for just the delta
-        const existing = baseSeg.querySelectorAll('.carousel-item').length;
-        for (let i = existing; i < imageUrls.length; i++) {
-            baseSeg.appendChild(createItem(imageUrls[i], i));
-        }
-        // Rebuild clone
-        cloneSeg.innerHTML = '';
-        for (let i = 0; i < imageUrls.length; i++) {
-            cloneSeg.appendChild(createItem(imageUrls[i], i, true));
-        }
-    } else {
-        track.innerHTML = '';
-        const baseSeg = document.createElement('div');
-        baseSeg.className = 'carousel-segment';
-        imageUrls.forEach((u, i) => baseSeg.appendChild(createItem(u, i)));
-        const cloneSeg = document.createElement('div');
-        cloneSeg.className = 'carousel-segment';
-        imageUrls.forEach((u, i) => cloneSeg.appendChild(createItem(u, i, true)));
-        track.appendChild(baseSeg);
-        track.appendChild(cloneSeg);
-        offsetPx = 0;
-    }
-
-    // Measure width (sum itemWidth + gap * (n-1))
-    baseSegmentWidth = imageUrls.length * (itemWidth + gap);
-    lastBuildCount = imageUrls.length;
-}
-
-function createItem(url, index, clone=false) {
-    const wrap = document.createElement('button');
-    wrap.type = 'button';
-    wrap.className = 'carousel-item';
-    wrap.setAttribute('aria-label', `Open image ${index+1}`);
-    wrap.addEventListener('click', () => openPopup(url));
-    const img = document.createElement('img');
-    img.src = url;
-    img.alt = altFromUrl(url);
-    img.loading = 'lazy';
-    img.decoding = 'async';
-    img.onerror = () => {
-        wrap.style.background = '#f87171';
-        wrap.textContent = 'Failed';
-    };
-    wrap.appendChild(img);
-    return wrap;
-}
-
-/* Animation loop */
-function animate(ts) {
-    if (!lastTs) lastTs = ts;
-    const dt = (ts - lastTs) / 1000;
-    lastTs = ts;
-
-    if (!isPaused && baseSegmentWidth > 0) {
-        const dir = isReversed ? 1 : -1;
-        offsetPx += dir * speedPxPerSec * dt;
-        // Normalize offset within one segment width
-        if (offsetPx <= -baseSegmentWidth) offsetPx += baseSegmentWidth;
-        else if (offsetPx >= 0) offsetPx -= baseSegmentWidth;
-        track.style.transform = `translateX(${offsetPx}px)`;
-    }
-    animationId = requestAnimationFrame(animate);
-}
-
-/* Manual navigation (shift exactly one image width) */
-function shiftByImages(n) {
-    pauseAutoTemp();
-    offsetPx += n * (itemWidth + gap);
-    // Normalize similarly to animation loop
-    while (offsetPx <= -baseSegmentWidth) offsetPx += baseSegmentWidth;
-    while (offsetPx >= 0) offsetPx -= baseSegmentWidth;
-    track.style.transform = `translateX(${offsetPx}px)`;
-}
-
-function setSecondsPerImage(newSeconds, evt=null) {
-    secondsPerImage = newSeconds;
-    speedPxPerSec = calcSpeed();
-    document.querySelectorAll('.speed-btn').forEach(b => {
-        b.classList.toggle('active', Number(b.dataset.seconds) === secondsPerImage);
-    });
-}
-
-/* Popup */
-function openPopup(url) {
-    popupImg.src = url;
-    popup.classList.add('open');
-    isPaused = true;
-}
-function closePopup() {
-    popup.classList.remove('open');
-    isPaused = false;
-}
-
-/* Pause logic */
-function togglePause() {
-    isPaused = !isPaused;
-    pauseBtn.textContent = isPaused ? '▶️' : '⏸️';
-    pauseBtn.title = isPaused ? 'Play (Space)' : 'Pause (Space)';
-}
-function toggleDirection() {
-    isReversed = !isReversed;
-    directionBtn.textContent = isReversed ? '↩️' : '🔄';
-}
-
-function pauseAutoTemp(fromPopup=false) {
-    isPaused = true;
-    pauseBtn.textContent = '▶️';
-    if (!fromPopup) {
-        if (autoResumeTimer) clearTimeout(autoResumeTimer);
-        autoResumeTimer = setTimeout(() => {
-            isPaused = false;
-            pauseBtn.textContent = '⏸️';
-        }, 3000);
-    }
-}
-function resumeAfterTemp() {
-    isPaused = false;
-    pauseBtn.textContent = '⏸️';
-}
-
-/* Fetching images */
 async function fetchImages(first=false) {
     if (fetching) return;
     fetching = true;
@@ -453,7 +253,6 @@ document.addEventListener('keydown', e => {
 document.getElementById('close-popup').addEventListener('click', closePopup);
 popup.addEventListener('click', e => { if (e.target === popup) closePopup(); });
 
-/* Visibility (pause when hidden) */
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
         isPaused = true;
@@ -463,22 +262,19 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
-/* Resize debounced: recompute widths / speed */
 let resizeTimer;
 window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
-        // Recalculate itemWidth (in case responsive breakpoint changed)
         const firstItem = document.querySelector('.carousel-item');
         if (firstItem) {
-            itemWidth = firstItem.getBoundingClientRect().width; // includes padding
+            itemWidth = firstItem.getBoundingClientRect().width;
             speedPxPerSec = calcSpeed();
             baseSegmentWidth = imageUrls.length * (itemWidth + gap);
         }
     }, 180);
 });
 
-/* Init */
 (async function init() {
     await fetchImages(true);
     updateCounter();
@@ -489,7 +285,6 @@ window.addEventListener('resize', () => {
     requestAnimationFrame(animate);
 })();
 
-/* Poll every 60s for new images */
 setInterval(() => fetchImages(false), 60_000);
 </script>
 </body>
