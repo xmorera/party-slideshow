@@ -10,16 +10,49 @@
     body { font-family:"Segoe UI",system-ui,sans-serif; background:#fff; min-height:100vh; overflow:hidden; color:#111; }
     a,button{cursor:pointer;}
 
-    .nav-buttons{position:fixed;top:20px;right:20px;display:flex;gap:10px;z-index:1000;}
-    .nav-btn{font-size:14px;font-weight:500;padding:12px 18px;border-radius:25px;color:#111;text-decoration:none;transition:.25s;background:rgba(0,0,0,.05);}
-    .nav-btn:hover{transform:translateY(-2px);background:rgba(0,0,0,.12);}
+    /* NAV buttons now at bottom CENTER, above timer buttons */
+    .nav-buttons{
+        position:fixed;
+        bottom:86px;              /* sits above speed controls (which are at 26px) */
+        left:50%;
+        transform:translateX(-50%);
+        display:flex;
+        gap:14px;
+        z-index:1000;
+        background:rgba(0,0,0,.04);
+        padding:10px 18px;
+        border-radius:40px;
+        backdrop-filter:blur(6px);
+    }
+    .nav-btn{
+        font-size:14px;
+        font-weight:500;
+        padding:10px 18px;
+        border-radius:22px;
+        color:#111;
+        text-decoration:none;
+        transition:.25s;
+        background:rgba(0,0,0,.06);
+        border:0;
+        line-height:1.1;
+        display:flex;
+        gap:6px;
+        align-items:center;
+    }
+    .nav-btn:hover{background:rgba(0,0,0,.12);}
 
     .title-overlay{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:14px 32px;border-radius:28px;text-align:center;z-index:900;background:rgba(0,0,0,.04);}
-    .main-title{font-size:2.1rem;font-weight:700;line-height:1.1;background:linear-gradient(45deg,#d97706,#ea580c,#db2777);-webkit-background-clip:text;background-clip:text;color:transparent;margin:0;}
+    .main-title{
+        font-size:2.1rem;
+        font-weight:700;
+        line-height:1.1;
+        color:#000;  /* solid black per request */
+        margin:0;
+    }
 
     .loading-overlay{position:fixed;inset:0;display:flex;flex-direction:column;gap:18px;align-items:center;justify-content:center;text-align:center;z-index:3000;background:#fff;color:#111;}
     .spinner{width:46px;height:46px;border-radius:50%;border:4px solid rgba(0,0,0,.15);border-top:4px solid #111;animation:spin 1s linear infinite;}
-    @keyframes spin{to{transform:rotate(360deg);}}
+    @keyframes spin{to{transform:rotate(360deg);} }
 
     .carousel-container{position:fixed;top:50%;left:0;width:100%;height:50vh;transform:translateY(-50%);overflow:hidden;padding:20px;display:flex;align-items:center;}
     .carousel-viewport{position:relative;width:100%;height:100%;overflow:hidden;}
@@ -29,7 +62,19 @@
     .carousel-item img{width:100%;height:100%;object-fit:cover;display:block;user-select:none;-webkit-user-drag:none;}
     .carousel-item:hover{transform:scale(1.05);box-shadow:0 12px 30px -8px rgba(0,0,0,.25);z-index:10;}
 
-    .speed-controls{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:950;background:rgba(0,0,0,.04);padding:8px 14px;border-radius:28px;backdrop-filter:blur(6px);}
+    .speed-controls{
+        position:fixed;
+        bottom:26px;
+        left:50%;
+        transform:translateX(-50%);
+        display:flex;
+        gap:10px;
+        z-index:950;
+        background:rgba(0,0,0,.04);
+        padding:8px 14px;
+        border-radius:28px;
+        backdrop-filter:blur(6px);
+    }
     .speed-btn{font-size:13px;padding:8px 14px;border-radius:18px;border:0;color:#111;background:rgba(0,0,0,.06);transition:background .25s,color .25s;}
     .speed-btn:hover{background:rgba(0,0,0,.12);}
     .speed-btn.active{background:#111;color:#fff;}
@@ -46,10 +91,26 @@
     .close-popup:hover{background:rgba(0,0,0,.75);}
 
     .toast{position:fixed;top:100px;left:50%;transform:translateX(-50%);padding:14px 30px;border-radius:26px;font-size:15px;animation:fadeSlide 3.2s forwards;z-index:3600;background:linear-gradient(135deg,#16a34a,#059669);color:#fff;box-shadow:0 8px 24px -6px rgba(0,0,0,.25);}
-    @keyframes fadeSlide{0%{opacity:0;transform:translate(-50%,-10px);}10%,80%{opacity:1;transform:translate(-50%,0);}100%{opacity:0;transform:translate(-50%,-6px);}}
+    @keyframes fadeSlide{0%{opacity:0;transform:translate(-50%,-10px);}10%,80%{opacity:1;transform:translate(-50%,0);}100%{opacity:0;transform:translate(-50%,-6px);} }
 
-    @media (max-width:900px){.carousel-item{flex-basis:260px;}.main-title{font-size:1.7rem;}}
-    @media (max-width:600px){.carousel-container{height:45vh;padding:12px;}.carousel-item{flex-basis:220px;}.speed-controls{bottom:20px;padding:6px 10px;gap:6px;}.speed-btn{padding:6px 10px;font-size:12px;}.image-counter{bottom:20px;right:18px;font-size:12px;padding:7px 14px;}}
+    @media (max-width:900px){
+        .carousel-item{flex-basis:260px;}
+        .main-title{font-size:1.7rem;}
+    }
+    @media (max-width:600px){
+        .carousel-container{height:45vh;padding:12px;}
+        .carousel-item{flex-basis:220px;}
+        .speed-controls{bottom:20px;padding:6px 10px;gap:6px;}
+        .speed-btn{padding:6px 10px;font-size:12px;}
+        .nav-buttons{
+            bottom:76px;
+            padding:8px 12px;
+            gap:8px;
+            flex-wrap:wrap;
+        }
+        .nav-btn{padding:8px 14px;font-size:12px;}
+        .image-counter{bottom:20px;right:18px;font-size:12px;padding:7px 14px;}
+    }
 </style>
 </head>
 <body>
@@ -59,12 +120,13 @@
         <p style="opacity:.75">Getting the latest memories ready 📸</p>
     </div>
 
+    <div class="title-overlay"><h1 class="main-title">SFC 30</h1></div>
+
+    <!-- Nav buttons moved to bottom above speed controls -->
     <div class="nav-buttons">
         <a class="nav-btn" href="/upload">📤 Upload</a>
         <a class="nav-btn" href="/all">🗂 All Photos</a>
     </div>
-
-    <div class="title-overlay"><h1 class="main-title">SFC 30</h1></div>
 
     <div class="speed-controls">
         <button class="speed-btn" data-seconds="8">8s</button>
@@ -105,7 +167,6 @@ const loadingOverlay=document.getElementById('loading-overlay');
 const counterEl=document.getElementById('image-counter');
 const popup=document.getElementById('image-popup');
 const popupImg=document.getElementById('popup-image');
-/* (Controls may be hidden; reference safely) */
 const pauseBtn=document.getElementById('pause-btn');
 const directionBtn=document.getElementById('direction-btn');
 const prevBtn=document.getElementById('prev-btn');
@@ -164,115 +225,83 @@ function setSecondsPerImage(s){
 function openPopup(url){popupImg.src=url;popup.classList.add('open');isPaused=true;}
 function closePopup(){popup.classList.remove('open');isPaused=false;}
 
-function togglePause(){
-  isPaused=!isPaused;
-  pauseBtn.textContent=isPaused?'▶️':'⏸️';
-  pauseBtn.title=isPaused?'Play (Space)':'Pause (Space)';
-}
-function toggleDirection(){
-  isReversed=!isReversed;
-  directionBtn.textContent=isReversed?'↩️':'🔄';
+function shiftByImages(n){
+  offsetPx+=n*(itemWidth+gap);
+  while(offsetPx<=-baseSegmentWidth) offsetPx+=baseSegmentWidth;
+  while(offsetPx>=0) offsetPx-=baseSegmentWidth;
+  track.style.transform=`translateX(${offsetPx}px)`;
 }
 
-function pauseAutoTemp(fromPopup=false){
-  isPaused=true;
-  pauseBtn.textContent='▶️';
-  if(!fromPopup){
-    if(autoResumeTimer) clearTimeout(autoResumeTimer);
-    autoResumeTimer=setTimeout(()=>{
-      isPaused=false;
-      pauseBtn.textContent='⏸️';
-    },3000);
+function togglePause(){isPaused=!isPaused;if(pauseBtn){pauseBtn.textContent=isPaused?'▶️':'⏸️';pauseBtn.title=isPaused?'Play (Space)':'Pause (Space)';}}
+function toggleDirection(){isReversed=!isReversed;if(directionBtn) directionBtn.textContent=isReversed?'↩️':'🔄';}
+
+async function fetchImages(first=false){
+  if(fetching) return;fetching=true;
+  try{
+    const res=await fetch('/api/images',{cache:'no-store'});if(!res.ok) throw new Error('HTTP '+res.status);
+    const data=await res.json();if(data.status==='error') throw new Error(data.error||'API error');
+    const urls=(data.images||[]).filter(Boolean);
+    if(first) showLoading();
+    if(urls.length===0){
+      track.innerHTML='<div style="width:100%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;">📸 No photos yet.</div>';
+      hideLoading();return;
+    }
+    const newOnes=urls.filter(u=>!imageUrls.includes(u));
+    if(newOnes.length>0){
+      imageUrls=urls;
+      buildTrack(lastBuildCount>0);
+      updateCounter();
+      if(lastBuildCount>0) createToast(`🎉 ${newOnes.length} new photo${newOnes.length>1?'s':''} added`);
+    }
+    hideLoading();
+  }catch(e){
+    console.error(e);
+    if(first){
+      track.innerHTML='<div style="width:100%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;">❌ Error loading photos</div>';
+      hideLoading();
+    }
+  }finally{fetching=false;}
+}
+
+document.querySelectorAll('.speed-btn').forEach(b=>b.addEventListener('click',()=>setSecondsPerImage(Number(b.dataset.seconds))));
+if(prevBtn) prevBtn.addEventListener('click',()=>shiftByImages(+1));
+if(nextBtn) nextBtn.addEventListener('click',()=>shiftByImages(-1));
+if(pauseBtn) pauseBtn.addEventListener('click',togglePause);
+if(directionBtn) directionBtn.addEventListener('click',toggleDirection);
+if(refreshBtn) refreshBtn.addEventListener('click',()=>fetchImages(false));
+
+document.addEventListener('keydown',e=>{
+  if(e.target.closest('input,textarea')) return;
+  switch(e.key){
+    case ' ': e.preventDefault(); togglePause(); break;
+    case 'Escape': closePopup(); break;
+    case 'ArrowLeft': shiftByImages(+1); break;
+    case 'ArrowRight': shiftByImages(-1); break;
+    case 'r': case 'R': toggleDirection(); break;
+    case 'f': case 'F': fetchImages(false); break;
+    case '1': setSecondsPerImage(8); break;
+    case '2': setSecondsPerImage(5); break;
+    case '3': setSecondsPerImage(3); break;
+    case '4': setSecondsPerImage(2); break;
   }
-}
-function resumeAfterTemp(){
-  isPaused=false;
-  pauseBtn.textContent='⏸️';
-}
-
-async function fetchImages(first=false) {
-    if (fetching) return;
-    fetching = true;
-    try {
-        const res = await fetch('/api/images', { cache: 'no-store' });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const data = await res.json();
-        if (data.status === 'error') throw new Error(data.error || 'API error');
-        const urls = (data.images || []).filter(Boolean);
-        if (first) showLoading();
-        if (urls.length === 0) {
-            track.innerHTML = `<div style="width:100%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;">📸 No photos yet.</div>`;
-            hideLoading();
-            return;
-        }
-        const newOnes = urls.filter(u => !imageUrls.includes(u));
-        if (newOnes.length > 0) {
-            imageUrls = urls;  // Keep order from server
-            buildTrack(lastBuildCount > 0); // append if already built
-            updateCounter();
-            if (lastBuildCount > 0) createToast(`🎉 ${newOnes.length} new photo${newOnes.length>1?'s':''} added`);
-        }
-        hideLoading();
-    } catch (e) {
-        console.error(e);
-        if (first) {
-            track.innerHTML = `<div style="width:100%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;">❌ Error loading photos</div>`;
-            hideLoading();
-        }
-    } finally {
-        fetching = false;
-    }
-}
-
-document.querySelectorAll('.speed-btn').forEach(btn => {
-    btn.addEventListener('click', e => setSecondsPerImage(Number(btn.dataset.seconds), e));
 });
 
-document.getElementById('prev-btn').addEventListener('click', () => shiftByImages(+1));
-document.getElementById('next-btn').addEventListener('click', () => shiftByImages(-1));
-pauseBtn.addEventListener('click', togglePause);
-directionBtn.addEventListener('click', toggleDirection);
-document.getElementById('refresh-btn').addEventListener('click', () => fetchImages(false));
+document.getElementById('close-popup').addEventListener('click',closePopup);
+popup.addEventListener('click',e=>{if(e.target===popup) closePopup();});
 
-document.addEventListener('keydown', e => {
-    if (e.target.closest('input,textarea')) return;
-    switch (e.key) {
-        case ' ': e.preventDefault(); togglePause(); break;
-        case 'ArrowLeft': shiftByImages(+1); break;
-        case 'ArrowRight': shiftByImages(-1); break;
-        case 'Escape': closePopup(); break;
-        case 'r': case 'R': toggleDirection(); break;
-        case 'f': case 'F': fetchImages(false); break;
-        case '1': setSecondsPerImage(8); break;
-        case '2': setSecondsPerImage(5); break;
-        case '3': setSecondsPerImage(3); break;
-        case '4': setSecondsPerImage(2); break;
-    }
-});
-
-document.getElementById('close-popup').addEventListener('click', closePopup);
-popup.addEventListener('click', e => { if (e.target === popup) closePopup(); });
-
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        isPaused = true;
-    } else {
-        isPaused = false;
-        pauseBtn.textContent = '⏸️';
-    }
-});
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){isPaused=true;} else {isPaused=false;if(pauseBtn) pauseBtn.textContent='⏸️';} });
 
 let resizeTimer;
-window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-        const firstItem = document.querySelector('.carousel-item');
-        if (firstItem) {
-            itemWidth = firstItem.getBoundingClientRect().width;
-            speedPxPerSec = calcSpeed();
-            baseSegmentWidth = imageUrls.length * (itemWidth + gap);
-        }
-    }, 180);
+window.addEventListener('resize',()=>{
+  clearTimeout(resizeTimer);
+  resizeTimer=setTimeout(()=>{
+    const firstItem = document.querySelector('.carousel-item');
+    if (firstItem) {
+        itemWidth = firstItem.getBoundingClientRect().width;
+        speedPxPerSec = calcSpeed();
+        baseSegmentWidth = imageUrls.length * (itemWidth + gap);
+    }
+  }, 180);
 });
 
 (async function init() {
