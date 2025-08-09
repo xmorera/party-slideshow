@@ -572,57 +572,6 @@ def upload_to_dropbox(file_path, filename):
         print(f"Traceback: {traceback.format_exc()}")
         return False
 
-def get_images():
-    """Get list of image files from the images folder"""
-    try:
-        if not os.path.exists(IMAGE_FOLDER):
-            print(f"Images folder does not exist: {IMAGE_FOLDER}")
-            return []
-        
-        images = []
-        print(f"Scanning {IMAGE_FOLDER} for images...")
-        
-        for filename in os.listdir(IMAGE_FOLDER):
-            if any(filename.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']):
-                # Return objects with filename and URL
-                image_obj = {
-                    'filename': filename,
-                    'url': f"/images/{filename}",
-                    'path': os.path.join(IMAGE_FOLDER, filename)
-                }
-                images.append(image_obj)
-                print(f"  Found image: {filename}")
-        
-        # Sort by modification time (newest first)
-        images.sort(key=lambda x: os.path.getmtime(x['path']), reverse=True)
-        
-        print(f"Found {len(images)} images in {IMAGE_FOLDER}")
-        return images
-        
-    except Exception as e:
-        print(f"ERROR: Failed to get images: {e}")
-        return []
-
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in UPLOAD_EXTENSIONS
-
-LAST_SYNC_TIME = 0
-SYNC_COOLDOWN = 300  # 5 minutes between syncs
-
-@app.after_request
-def add_default_headers(resp):
-    """
-    Add mild caching headers for images & static-like JSON to reduce network chatter.
-    Does not break current behavior (short max-age for quick updates).
-    """
-    path = request.path
-    if path.startswith("/images/"):
-        resp.headers.setdefault("Cache-Control", "public, max-age=30, immutable")
-    elif path.startswith("/api/images"):
-        resp.headers.setdefault("Cache-Control", "no-store")
-    return resp
-
 @app.route('/')
 def main():
     print("=== Loading main page (no Dropbox sync) ===")
@@ -689,58 +638,109 @@ def list_images():
     images = get_images()
     return '<br>'.join(i['filename'] for i in images)
 
-@app.route('/upload')
-def upload_page():
-    return render_template('upload.html')
+@app.route('/upload', methods=['GET', 'POST'])
+def upload():
+    """
+    Unified upload endpoint supporting:
+      - Single file (field 'file')
+      - Multiple files (field 'files[]')
+    Performs duplicate detection and optional Dropbox sync.
+    """
+    if request.method == 'POST':
+        # Collect files from both single and multi inputs
+        files = []
 
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    if 'file' not in request.files:
-        flash('No file selected')
-        return redirect(request.url)
-    
-    file = request.files['file']
-    
-    if file.filename == '':
-        flash('No file selected')
-        return redirect(request.url)
-    
-    if file and allowed_file(file.filename):
-        os.makedirs(IMAGE_FOLDER, exist_ok=True)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        unique_id = str(uuid.uuid4())[:8]
-        file_extension = file.filename.rsplit('.', 1)[1].lower()
-        filename = f"photo_{timestamp}_{unique_id}.{file_extension}"
-        filepath = os.path.join(IMAGE_FOLDER, filename)
-        try:
-            file.save(filepath)
-            print(f"Photo saved locally: {filepath}")
-            # Invalidate cache quickly
-            get_images(force=True)
-            print("=== Testing Dropbox connection before upload ===")
-            test_dbx = get_dropbox_client_with_retry()
-            if not test_dbx:
-                flash('Photo uploaded (Dropbox unavailable).')
-                return redirect(url_for('main'))
-            try:
-                account = test_dbx.users_get_current_account()
-                print(f"SUCCESS: Dropbox connection verified - {account.name.display_name}")
-            except Exception as e:
-                print(f"Dropbox test failed: {e}")
-                flash('Photo uploaded locally (Dropbox auth failed).')
-                return redirect(url_for('main'))
-            dropbox_success = upload_to_dropbox(filepath, filename)
-            if dropbox_success:
-                flash('Photo uploaded locally & to Dropbox.')
-            else:
-                flash('Photo uploaded locally (Dropbox upload failed).')
-            return redirect(url_for('main'))
-        except Exception as e:
-            flash(f'Error uploading photo: {e}')
-            print(f"ERROR upload: {e}")
+        # Multi-select input
+        if 'files[]' in request.files:
+            files.extend([f for f in request.files.getlist('files[]') if f and f.filename])
+
+        # Single capture / gallery input
+        if 'file' in request.files:
+            single = request.files['file']
+            if single and single.filename:
+                files.append(single)
+
+        if not files:
+            flash('No file selected')
             return redirect(request.url)
-    flash('Invalid file type.')
-    return redirect(request.url)
+
+        uploaded_count = 0
+        ignored_count = 0
+        error_count = 0
+        uploaded_files = []
+
+        for file in files:
+            if not allowed_file(file.filename):
+                error_count += 1
+                print(f"File type not allowed: {file.filename}")
+                continue
+
+            try:
+                original_filename = secure_filename(file.filename)
+                # Temp path (include uuid to avoid clashes)
+                temp_path = os.path.join(IMAGE_FOLDER, f"temp_{uuid.uuid4().hex}_{original_filename}")
+                os.makedirs(IMAGE_FOLDER, exist_ok=True)
+                file.save(temp_path)
+                file_size = os.path.getsize(temp_path)
+
+                final_path = os.path.join(IMAGE_FOLDER, original_filename)
+                unique_path = get_unique_filename(final_path, file_size)
+
+                if unique_path is None:
+                    # Duplicate (same size & name)
+                    os.remove(temp_path)
+                    ignored_count += 1
+                    print(f"Ignored duplicate file: {original_filename}")
+                    continue
+
+                # Move to final location
+                if temp_path != unique_path:
+                    os.rename(temp_path, unique_path)
+
+                uploaded_files.append(os.path.basename(unique_path))
+                uploaded_count += 1
+                print(f"Uploaded: {os.path.basename(unique_path)} ({file_size} bytes)")
+
+            except Exception as e:
+                error_count += 1
+                print(f"Error uploading {file.filename}: {e}")
+                if 'temp_path' in locals() and os.path.exists(temp_path):
+                    try: os.remove(temp_path)
+                    except: pass
+
+        # Build flash messages
+        if uploaded_count:
+            flash(f"✅ Uploaded {uploaded_count} photo{'s' if uploaded_count!=1 else ''}")
+            if len(uploaded_files) <= 5:
+                flash("Files: " + ", ".join(uploaded_files))
+        if ignored_count:
+            flash(f"📋 Ignored {ignored_count} duplicate photo{'s' if ignored_count!=1 else ''}")
+        if error_count:
+            flash(f"❌ Failed to upload {error_count} file{'s' if error_count!=1 else ''}")
+
+        # Refresh cache & attempt Dropbox sync only if new files
+        if uploaded_count:
+            try:
+                get_images(force=True)
+            except TypeError:
+                # Safety if old duplicate get_images() still present
+                print("WARNING: get_images(force=True) failed; ensure duplicate definition removed.")
+                get_images()
+
+            try:
+                print("=== Auto Dropbox sync after upload ===")
+                if sync_dropbox_images():
+                    flash("🔄 Synced to Dropbox")
+                else:
+                    flash("⚠️ Dropbox sync failed")
+            except Exception as e:
+                flash(f"⚠️ Sync error: {e}")
+
+        return redirect(url_for('upload'))
+
+    # GET
+    images = get_images()
+    return render_template('upload.html', images=images)
 
 @app.route('/generate-dropbox-token')
 def token_generator_page():
@@ -1171,88 +1171,490 @@ def get_unique_filename(filepath, original_size):
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
+    """
+    Unified upload endpoint supporting:
+      - Single file (field 'file')
+      - Multiple files (field 'files[]')
+    Performs duplicate detection and optional Dropbox sync.
+    """
     if request.method == 'POST':
-        if 'files[]' not in request.files:
-            flash('No files selected')
+        # Collect files from both single and multi inputs
+        files = []
+
+        # Multi-select input
+        if 'files[]' in request.files:
+            files.extend([f for f in request.files.getlist('files[]') if f and f.filename])
+
+        # Single capture / gallery input
+        if 'file' in request.files:
+            single = request.files['file']
+            if single and single.filename:
+                files.append(single)
+
+        if not files:
+            flash('No file selected')
             return redirect(request.url)
-        
-        files = request.files.getlist('files[]')
+
         uploaded_count = 0
         ignored_count = 0
         error_count = 0
         uploaded_files = []
-        
+
         for file in files:
-            if file.filename == '':
-                continue
-                
-            if file and allowed_file(file.filename):
-                try:
-                    # Get original filename and prepare temp save
-                    original_filename = secure_filename(file.filename)
-                    temp_path = os.path.join(IMAGE_FOLDER, f"temp_{original_filename}")
-                    
-                    # Save temporarily to get file size
-                    file.save(temp_path)
-                    file_size = os.path.getsize(temp_path)
-                    
-                    # Get the final filename (check for duplicates)
-                    final_path = os.path.join(IMAGE_FOLDER, original_filename)
-                    unique_path = get_unique_filename(final_path, file_size)
-                    
-                    if unique_path is None:
-                        # File should be ignored (duplicate with same size)
-                        os.remove(temp_path)  # Clean up temp file
-                        ignored_count += 1
-                        print(f"Ignored duplicate file: {original_filename}")
-                    else:
-                        # Move temp file to final location
-                        if temp_path != unique_path:
-                            os.rename(temp_path, unique_path)
-                        
-                        uploaded_files.append(os.path.basename(unique_path))
-                        uploaded_count += 1
-                        print(f"Successfully uploaded: {os.path.basename(unique_path)} ({file_size} bytes)")
-                        
-                except Exception as e:
-                    error_count += 1
-                    print(f"Error uploading {file.filename}: {e}")
-                    # Clean up temp file if it exists
-                    if 'temp_path' in locals() and os.path.exists(temp_path):
-                        os.remove(temp_path)
-            else:
+            if not allowed_file(file.filename):
                 error_count += 1
                 print(f"File type not allowed: {file.filename}")
-        
-        # Prepare flash messages
-        messages = []
-        if uploaded_count > 0:
-            messages.append(f"✅ Successfully uploaded {uploaded_count} photos")
-            if len(uploaded_files) <= 5:
-                messages.append(f"Files: {', '.join(uploaded_files)}")
-        
-        if ignored_count > 0:
-            messages.append(f"📋 Ignored {ignored_count} duplicate photos (same name and size)")
-        
-        if error_count > 0:
-            messages.append(f"❌ Failed to upload {error_count} files")
-        
-        for message in messages:
-            flash(message)
-        
-        # Auto-sync after successful upload if enabled
-        if uploaded_count > 0:
+                continue
+
             try:
-                print("=== Auto-sync after upload ===")
-                if sync_dropbox_images():
-                    flash("🔄 Photos automatically synced to Dropbox")
-                else:
-                    flash("⚠️ Photos uploaded but Dropbox sync failed")
+                original_filename = secure_filename(file.filename)
+                # Temp path (include uuid to avoid clashes)
+                temp_path = os.path.join(IMAGE_FOLDER, f"temp_{uuid.uuid4().hex}_{original_filename}")
+                os.makedirs(IMAGE_FOLDER, exist_ok=True)
+                file.save(temp_path)
+                file_size = os.path.getsize(temp_path)
+
+                final_path = os.path.join(IMAGE_FOLDER, original_filename)
+                unique_path = get_unique_filename(final_path, file_size)
+
+                if unique_path is None:
+                    # Duplicate (same size & name)
+                    os.remove(temp_path)
+                    ignored_count += 1
+                    print(f"Ignored duplicate file: {original_filename}")
+                    continue
+
+                # Move to final location
+                if temp_path != unique_path:
+                    os.rename(temp_path, unique_path)
+
+                uploaded_files.append(os.path.basename(unique_path))
+                uploaded_count += 1
+                print(f"Uploaded: {os.path.basename(unique_path)} ({file_size} bytes)")
+
             except Exception as e:
-                flash(f"⚠️ Photos uploaded but sync error: {str(e)}")
-        
+                error_count += 1
+                print(f"Error uploading {file.filename}: {e}")
+                if 'temp_path' in locals() and os.path.exists(temp_path):
+                    try: os.remove(temp_path)
+                    except: pass
+
+        # Build flash messages
+        if uploaded_count:
+            flash(f"✅ Uploaded {uploaded_count} photo{'s' if uploaded_count!=1 else ''}")
+            if len(uploaded_files) <= 5:
+                flash("Files: " + ", ".join(uploaded_files))
+        if ignored_count:
+            flash(f"📋 Ignored {ignored_count} duplicate photo{'s' if ignored_count!=1 else ''}")
+        if error_count:
+            flash(f"❌ Failed to upload {error_count} file{'s' if error_count!=1 else ''}")
+
+        # Refresh cache & attempt Dropbox sync only if new files
+        if uploaded_count:
+            try:
+                get_images(force=True)
+            except TypeError:
+                # Safety if old duplicate get_images() still present
+                print("WARNING: get_images(force=True) failed; ensure duplicate definition removed.")
+                get_images()
+
+            try:
+                print("=== Auto Dropbox sync after upload ===")
+                if sync_dropbox_images():
+                    flash("🔄 Synced to Dropbox")
+                else:
+                    flash("⚠️ Dropbox sync failed")
+            except Exception as e:
+                flash(f"⚠️ Sync error: {e}")
+
         return redirect(url_for('upload'))
-    
-    # GET request - show upload form
+
+    # GET
     images = get_images()
     return render_template('upload.html', images=images)
+
+@app.route('/generate-dropbox-token')
+def token_generator_page():
+    return render_template('token_generator.html')
+
+@app.route('/generate-tokens', methods=['POST'])
+def generate_tokens():
+    """Generate Dropbox tokens via web interface"""
+    try:
+        data = request.get_json()
+        app_key = data.get('app_key')
+        app_secret = data.get('app_secret')
+        auth_code = data.get('auth_code')
+        
+        if not all([app_key, app_secret, auth_code]):
+            return jsonify({'success': False, 'error': 'Missing required parameters'})
+        
+        # Create OAuth2 flow
+        auth_flow = dropbox.DropboxOAuth2FlowNoRedirect(
+            app_key, 
+            app_secret,
+            token_access_type='offline'  # This is key for getting refresh tokens
+        )
+        
+        # Complete the OAuth flow
+        oauth_result = auth_flow.finish(auth_code)
+        
+        # Test the refresh token
+        try:
+            test_dbx = dropbox.Dropbox(
+                oauth2_refresh_token=oauth_result.refresh_token,
+                app_key=app_key,
+                app_secret=app_secret
+            )
+            account = test_dbx.users_get_current_account()
+            user_name = account.name.display_name
+            user_email = account.email
+            
+            print(f"SUCCESS: Generated tokens for {user_name} ({user_email})")
+            
+        except Exception as e:
+            print(f"WARNING: Token validation failed: {e}")
+            user_name = "Unknown"
+            user_email = "Unknown"
+        
+        # Auto-update environment variables
+        env_updated = False
+        if update_env_variable('DROPBOX_ACCESS_TOKEN', oauth_result.access_token):
+            env_updated = True
+            print(f"SUCCESS: Auto-updated DROPBOX_ACCESS_TOKEN")
+        
+        if update_env_variable('DROPBOX_REFRESH_TOKEN', oauth_result.refresh_token):
+            env_updated = True
+            print(f"SUCCESS: Auto-updated DROPBOX_REFRESH_TOKEN")
+        
+        if update_env_variable('APPKEY', app_key):
+            env_updated = True
+            print(f"SUCCESS: Auto-updated APPKEY")
+        
+        if update_env_variable('APPSECRET', app_secret):
+            env_updated = True
+            print(f"SUCCESS: Auto-updated APPSECRET")
+
+        return jsonify({
+            'success': True,
+            'access_token': oauth_result.access_token,
+            'refresh_token': oauth_result.refresh_token,
+            'account_id': oauth_result.account_id,
+            'user_name': user_name,
+            'user_email': user_email,
+            'env_updated': env_updated
+        })
+        
+    except Exception as e:
+        print(f"ERROR: Token generation failed: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/test-dropbox-token', methods=['POST'])
+def test_dropbox_token_endpoint():
+    """Test a Dropbox token via web interface"""
+    try:
+        data = request.get_json()
+        refresh_token = data.get('refresh_token')
+        app_key = data.get('app_key')
+        app_secret = data.get('app_secret')
+        
+        if not all([refresh_token, app_key, app_secret]):
+            return jsonify({'success': False, 'error': 'Missing required parameters'})
+        
+        # Test the refresh token
+        test_dbx = dropbox.Dropbox(
+            oauth2_refresh_token=refresh_token,
+            app_key=app_key,
+            app_secret=app_secret
+        )
+        
+        account = test_dbx.users_get_current_account()
+        
+        print(f"SUCCESS: Token test passed for {account.name.display_name}")
+        
+        return jsonify({
+            'success': True,
+            'user_name': account.name.display_name,
+            'user_email': account.email,
+            'account_id': account.account_id
+        })
+        
+    except Exception as e:
+        print(f"ERROR: Token test failed: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+def test_dropbox_token():
+    """Test if the current Dropbox token is valid and working"""
+    try:
+        print("=== Testing Dropbox token validity ===")
+        
+        # Try to get a client
+        dbx = get_dropbox_client_with_retry()
+        if not dbx:
+            print("ERROR: Could not create Dropbox client")
+            return False
+        
+        # Test with a simple API call
+        try:
+            account = dbx.users_get_current_account()
+            print(f"SUCCESS: Token is valid - Connected as {account.name.display_name}")
+            return True
+        except dropbox.exceptions.AuthError as auth_error:
+            print(f"Authentication error: {auth_error}")
+            if 'expired_access_token' in str(auth_error):
+                print("Token has expired and could not be refreshed")
+            return False
+        except Exception as e:
+            print(f"ERROR: API call failed: {e}")
+            return False
+            
+    except Exception as e:
+        print(f"ERROR: Token test failed: {e}")
+        return False
+
+@app.route('/update-access-token', methods=['POST'])
+def update_access_token():
+    """Update the access token from refresh token"""
+    try:
+        # Get new access token from refresh token
+        new_access_token = get_current_access_token()
+        
+        if not new_access_token:
+            return jsonify({
+                'success': False, 
+                'error': 'Failed to get new access token. Check your refresh token and app credentials.'
+            })
+            
+        # Update the environment variable
+        if update_env_variable('DROPBOX_ACCESS_TOKEN', new_access_token):
+            return jsonify({
+                'success': True,
+                'access_token': new_access_token,
+                'message': 'Access token updated successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to update access token environment variable'
+            })
+            
+    except Exception as e:
+        print(f"ERROR: Update access token failed: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/test-refresh-token')
+def test_refresh_token():
+    """Test endpoint to verify refresh token functionality"""
+    try:
+        refresh_token = os.environ.get('DROPBOX_REFRESH_TOKEN')
+        app_key = os.environ.get('APPKEY')
+        app_secret = os.environ.get('APPSECRET')
+        
+        if not all([refresh_token, app_key, app_secret]):
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing refresh token or app credentials',
+                'refresh_token': 'YES' if refresh_token else 'NO',
+                'app_key': 'YES' if app_key else 'NO',
+                'app_secret': 'YES' if app_secret else 'NO'
+            })
+        
+        # Test refresh token by getting a new access token
+        new_access_token = refresh_access_token(refresh_token, app_key, app_secret)
+        
+        if new_access_token:
+            # Test the new access token
+            try:
+                test_dbx = dropbox.Dropbox(new_access_token)
+                account = test_dbx.users_get_current_account()
+                
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Refresh token is working properly',
+                    'user_name': account.name.display_name,
+                    'user_email': account.email,
+                    'new_token_preview': new_access_token[:20] + '...',
+                    'refresh_token_preview': refresh_token[:20] + '...' if refresh_token else 'None'
+                })
+                
+            except Exception as test_error:
+                return jsonify({
+                    'status': 'error',
+                    'message': f'New access token test failed: {str(test_error)}',
+                    'refresh_token_preview': refresh_token[:20] + '...' if refresh_token else 'None'
+                })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to refresh access token',
+                'refresh_token_preview': refresh_token[:20] + '...' if refresh_token else 'None'
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Test failed: {str(e)}'
+        })
+
+@app.route('/health')
+def health_check():
+    """Simple health check endpoint that doesn't trigger sync"""
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': time.time(),
+        'images_available': len(get_images())
+    })
+
+@app.route('/ping')
+def ping():
+    """Simple ping endpoint for monitoring"""
+    return 'pong'
+
+@app.route('/debug-env')
+def debug_env():
+    """Debug endpoint to check environment variables (for development only)"""
+    try:
+        env_info = {}
+        
+        # Check each environment variable
+        variables = ['APPKEY', 'APPSECRET', 'DROPBOX_ACCESS_TOKEN', 'DROPBOX_REFRESH_TOKEN']
+        
+        for var in variables:
+            value = os.environ.get(var)
+            if value:
+                # Show only first 10 chars for security
+                env_info[var] = {
+                    'present': True,
+                    'length': len(value),
+                    'preview': value[:10] + '...' if len(value) > 10 else value
+                }
+            else:
+                env_info[var] = {
+                    'present': False,
+                    'length': 0,
+                    'preview': 'NOT SET'
+                }
+        
+        return jsonify({
+            'status': 'debug',
+            'environment_variables': env_info,
+            'python_version': sys.version,
+            'platform': os.name
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        })
+
+@app.route('/force-sync')
+def force_sync():
+    """Force sync with Dropbox regardless of cooldown"""
+    global LAST_SYNC_TIME
+    
+    try:
+        print("=== Manual sync triggered ===")
+        success = sync_dropbox_images()
+        if success:
+            LAST_SYNC_TIME = time.time()
+            return jsonify({'status': 'success', 'message': 'Manual sync completed successfully'})
+        else:
+            return jsonify({'status': 'error', 'message': 'Manual sync failed'}), 500
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'Manual sync error: {str(e)}'}), 500
+
+@app.route('/sync')
+def sync_page():
+    """Dedicated sync page for Dropbox operations"""
+    return render_template('sync.html')
+
+@app.route('/sync-status')
+def sync_status():
+    """Get current sync status and statistics"""
+    try:
+        # Check Dropbox connection without syncing
+        dbx = get_dropbox_client_with_retry()
+        dropbox_connected = dbx is not None
+        
+        if dropbox_connected:
+            try:
+                account = dbx.users_get_current_account()
+                user_info = {
+                    'name': account.name.display_name,
+                    'email': account.email
+                }
+            except:
+                user_info = None
+        else:
+            user_info = None
+        
+        # Get local image count
+        local_images = get_images()
+        
+        # Get last sync time
+        global LAST_SYNC_TIME
+        time_since_last_sync = int(time.time() - LAST_SYNC_TIME) if LAST_SYNC_TIME > 0 else None
+        
+        return jsonify({
+            'status': 'success',
+            'dropbox_connected': dropbox_connected,
+            'user_info': user_info,
+            'local_images_count': len(local_images),
+            'last_sync_seconds_ago': time_since_last_sync,
+            'sync_cooldown_seconds': SYNC_COOLDOWN,
+            'can_sync_now': time_since_last_sync is None or time_since_last_sync > SYNC_COOLDOWN
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        })
+
+@app.route('/sync-dropbox-manual', methods=['POST'])
+def sync_dropbox_manual():
+    """Manual Dropbox sync with detailed progress"""
+    global LAST_SYNC_TIME
+    
+    try:
+        print("=== Manual Dropbox sync started ===")
+        
+        # Check if we can sync (respect cooldown for manual syncs too, but allow override)
+        current_time = time.time()
+        time_since_last = current_time - LAST_SYNC_TIME if LAST_SYNC_TIME > 0 else SYNC_COOLDOWN + 1
+        
+        force_sync = request.json.get('force', False) if request.is_json else False
+        
+        if time_since_last < SYNC_COOLDOWN and not force_sync:
+            return jsonify({
+                'status': 'cooldown',
+                'message': f'Sync on cooldown. Wait {int(SYNC_COOLDOWN - time_since_last)} more seconds or use force=true',
+                'seconds_remaining': int(SYNC_COOLDOWN - time_since_last)
+            })
+        
+        # Perform the sync
+        success = sync_dropbox_images()
+        
+        if success:
+            LAST_SYNC_TIME = current_time
+            # Get updated image count
+            images = get_images()
+            return jsonify({
+                'status': 'success',
+                'message': 'Dropbox sync completed successfully',
+                'images_count': len(images),
+                'sync_time': current_time
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Dropbox sync failed'
+            }), 500
+            
+    except Exception as e:
+        print(f"ERROR: Manual sync failed: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Sync error: {str(e)}'
+        }), 500
