@@ -48,26 +48,8 @@ body{
 .flash-error{background:rgba(255,107,107,.18);border:1px solid rgba(255,107,107,.5);color:#ffc0c0;}
 .flash-success{background:rgba(78,205,196,.2);border:1px solid rgba(78,205,196,.55);color:#d4fffa;}
 
-.section{
-  display:flex;
-  flex-direction:column;
-  gap:18px;
-  background:rgba(255,255,255,0.05);
-  border:1px solid rgba(255,255,255,0.15);
-  padding:22px 22px 26px;
-  border-radius:22px;
-}
-.section h2{
-  font-size:1rem;
-  letter-spacing:.5px;
-  font-weight:600;
-  margin:0;
-  display:flex;
-  gap:6px;
-  align-items:center;
-  text-transform:uppercase;
-  opacity:.85;
-}
+.section{display:flex;flex-direction:column;gap:18px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);padding:22px 22px 26px;border-radius:22px;}
+.section h2{font-size:1rem;letter-spacing:.5px;font-weight:600;margin:0;display:flex;gap:6px;align-items:center;text-transform:uppercase;opacity:.85;}
 
 .camera-container{position:relative;display:flex;justify-content:center;}
 #video{
@@ -81,48 +63,17 @@ body{
 .preview-image{max-width:100%;max-height:300px;border-radius:18px;border:2px solid rgba(255,255,255,.25);}
 
 .button-group{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;}
-.btn{
-  padding:12px 24px;
-  border:none;
-  border-radius:30px;
-  font-size:.95rem;
-  font-weight:600;
-  cursor:pointer;
-  transition:.25s;
-  letter-spacing:.5px;
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-}
+.btn{padding:12px 24px;border:none;border-radius:30px;font-size:.95rem;font-weight:600;cursor:pointer;transition:.25s;letter-spacing:.5px;display:inline-flex;align-items:center;gap:6px;}
 .btn-primary{background:linear-gradient(45deg,#667eea,#764ba2);color:#fff;box-shadow:0 6px 18px -6px rgba(118,75,162,.55);}
 .btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 26px -6px rgba(118,75,162,.65);}
 .btn-secondary{background:linear-gradient(45deg,#ff6b6b,#ff944d);color:#fff;box-shadow:0 6px 18px -6px rgba(255,107,107,.55);}
 .btn-secondary:hover{transform:translateY(-2px);box-shadow:0 10px 26px -6px rgba(255,107,107,.65);}
 .btn-success{background:linear-gradient(45deg,#4ecdc4,#229b8c);color:#fff;box-shadow:0 6px 18px -6px rgba(78,205,196,.55);}
 .btn-success:hover{transform:translateY(-2px);box-shadow:0 10px 26px -6px rgba(78,205,196,.65);}
-.btn-outline{
-  background:rgba(255,255,255,.15);
-  color:#fff;
-  border:1px solid rgba(255,255,255,.35);
-}
-.btn-outline:hover{background:rgba(255,255,255,.25);}
 
 .upload-options{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;}
 .file-input{display:none;}
-.file-label{
-  cursor:pointer;
-  padding:12px 20px;
-  border-radius:30px;
-  font-weight:600;
-  font-size:.9rem;
-  letter-spacing:.4px;
-  background:linear-gradient(45deg,#96ceb4,#ffeaa7);
-  color:#242424;
-  box-shadow:0 6px 20px -8px rgba(150,206,180,.6);
-  transition:.25s;
-  min-width:170px;
-  text-align:center;
-}
+.file-label{cursor:pointer;padding:12px 20px;border-radius:30px;font-weight:600;font-size:.9rem;letter-spacing:.4px;background:linear-gradient(45deg,#96ceb4,#ffeaa7);color:#242424;box-shadow:0 6px 20px -8px rgba(150,206,180,.6);transition:.25s;min-width:170px;text-align:center;}
 .file-label.camera-label{background:linear-gradient(45deg,#ff6b6b,#ffa726);color:#fff;}
 .file-label:hover{transform:translateY(-2px);box-shadow:0 10px 28px -10px rgba(150,206,180,.75);}
 .file-label.camera-label:hover{box-shadow:0 10px 28px -10px rgba(255,107,107,.75);}
@@ -130,57 +81,22 @@ body{
 #uploadForm{text-align:center;display:none;}
 #uploadForm .btn-success{min-width:210px;}
 
-.divider{
-  height:1px;
-  background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.35),rgba(255,255,255,0));
-  margin:-4px 0 4px;
-}
-
-.bulk-area{
-  border:2px dashed rgba(255,255,255,.35);
-  border-radius:22px;
-  padding:30px 20px;
-  text-align:center;
-  background:rgba(255,255,255,.06);
-  transition:.25s;
-  position:relative;
-}
+.bulk-area{border:2px dashed rgba(255,255,255,.35);border-radius:22px;padding:30px 20px;text-align:center;background:rgba(255,255,255,.06);transition:.25s;position:relative;}
 .bulk-area.dragover{background:rgba(255,255,255,.12);border-color:#fff;}
 .bulk-area input{display:none;}
-.bulk-area label{
-  display:inline-block;
-  padding:12px 24px;
-  margin-top:10px;
-  border-radius:28px;
-  background:linear-gradient(45deg,#6ef9d1,#a0f3ff);
-  color:#103b3a;
-  font-weight:600;
-  cursor:pointer;
-  letter-spacing:.4px;
-  font-size:.9rem;
-  transition:.25s;
-}
+.bulk-area label{display:inline-block;padding:12px 24px;margin-top:10px;border-radius:28px;background:linear-gradient(45deg,#6ef9d1,#a0f3ff);color:#103b3a;font-weight:600;cursor:pointer;letter-spacing:.4px;font-size:.9rem;transition:.25s;}
 .bulk-area label:hover{transform:translateY(-2px);box-shadow:0 10px 26px -8px rgba(110,249,209,.6);}
+
 .file-list{margin-top:18px;text-align:left;max-height:180px;overflow:auto;font-size:.75rem;line-height:1.3;}
 .file-list ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;}
 .file-list li{padding:10px 12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:12px;}
 .progress-wrap{margin-top:18px;}
 .progress-bar-bg{width:100%;height:14px;border-radius:8px;background:rgba(255,255,255,.15);overflow:hidden;}
 .progress-bar-fill{height:100%;width:0;background:linear-gradient(90deg,#4ecdc4,#229b8c);transition:width .25s;}
-
 .bulk-actions{display:flex;justify-content:center;margin-top:16px;}
 .bulk-actions .btn-success{min-width:230px;}
 
-.back-link{
-  text-align:center;
-  display:inline-block;
-  margin-top:-4px;
-  color:rgba(255,255,255,.85);
-  text-decoration:none;
-  font-weight:500;
-  font-size:.9rem;
-  letter-spacing:.4px;
-}
+.back-link{text-align:center;display:inline-block;margin-top:-4px;color:rgba(255,255,255,.85);text-decoration:none;font-weight:500;font-size:.9rem;letter-spacing:.4px;}
 .back-link:hover{color:#fff;text-decoration:underline;}
 
 @media (max-width:560px){
@@ -279,6 +195,7 @@ const hiddenFileInput=document.getElementById('hiddenFileInput');
 let stream=null;
 
 startCameraBtn.addEventListener('click',async ()=>{
+  if(stream) return;
   try{
     const constraints={video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}};
     stream=await navigator.mediaDevices.getUserMedia(constraints);
@@ -295,10 +212,10 @@ startCameraBtn.addEventListener('click',async ()=>{
 
 captureBtn.addEventListener('click',()=>{
   const ctx=canvas.getContext('2d');
-  canvas.width=video.videoWidth;
-  canvas.height=video.videoHeight;
-  ctx.drawImage(video,0,0);
-  canvas.toBlob(blob=>{
+  canvas.width=video.videoWidth || 1280;
+  canvas.height=video.videoHeight || 720;
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  const finalize = blob =>{
     const url=URL.createObjectURL(blob);
     previewImage.src=url;
     previewContainer.style.display='block';
@@ -310,7 +227,15 @@ captureBtn.addEventListener('click',()=>{
     const dt=new DataTransfer();
     dt.items.add(file);
     hiddenFileInput.files=dt.files;
-  },'image/jpeg',0.85);
+  };
+  if(canvas.toBlob){
+    canvas.toBlob(finalize,'image/jpeg',0.9);
+  }else{
+    const data=canvas.toDataURL('image/jpeg',0.9);
+    const bstr=atob(data.split(',')[1]);const len=bstr.length;const u8=new Uint8Array(len);
+    for(let i=0;i<len;i++)u8[i]=bstr.charCodeAt(i);
+    finalize(new Blob([u8],{type:'image/jpeg'}));
+  }
 });
 
 retakeBtn.addEventListener('click',()=>{
@@ -342,7 +267,7 @@ galleryInput.addEventListener('change',e=>{if(e.target.files[0]) handleSingleFil
 cameraInput.addEventListener('change',e=>{if(e.target.files[0]) handleSingleFile(e.target.files[0]);});
 window.addEventListener('beforeunload',()=>{if(stream) stream.getTracks().forEach(t=>t.stop());});
 
-/* Bulk upload logic */
+/* Bulk upload */
 const dropArea=document.getElementById('dropArea');
 const multiInput=document.getElementById('multiInput');
 const fileListEl=document.getElementById('fileList');
@@ -369,8 +294,7 @@ multiInput.addEventListener('change',e=>showFiles([...e.target.files]));
 
 ['dragenter','dragover'].forEach(evt=>{
   dropArea.addEventListener(evt,e=>{
-    e.preventDefault();e.stopPropagation();
-    dropArea.classList.add('dragover');
+    e.preventDefault();e.stopPropagation();dropArea.classList.add('dragover');
   });
 });
 ['dragleave','drop'].forEach(evt=>{
@@ -379,10 +303,8 @@ multiInput.addEventListener('change',e=>showFiles([...e.target.files]));
     if(evt==='drop'){
       const files=[...e.dataTransfer.files].filter(f=>/^image\//.test(f.type));
       if(files.length){
-        const dt=new DataTransfer();
-        files.forEach(f=>dt.items.add(f));
-        multiInput.files=dt.files;
-        showFiles(files);
+        const dt=new DataTransfer();files.forEach(f=>dt.items.add(f));
+        multiInput.files=dt.files;showFiles(files);
       }
     }
     dropArea.classList.remove('dragover');
@@ -395,14 +317,10 @@ bulkUploadBtn.addEventListener('click',async ()=>{
   progressWrap.style.display='block';
   progressBar.style.width='0%';
   bulkUploadBtn.disabled=true;bulkUploadBtn.textContent='Uploading...';
-
-  // Progressive upload one by one (simple)
   for(let i=0;i<files.length;i++){
     const formData=new FormData();
-    formData.append('file',files[i]); // server expects 'file' (adjust if using files[])
-    try{
-      await fetch('/upload',{method:'POST',body:formData});
-    }catch(err){console.error('Upload failed',files[i].name,err);}
+    formData.append('file',files[i]);
+    try{ await fetch('/upload',{method:'POST',body:formData}); }catch(err){ console.error('Upload failed',files[i].name,err); }
     const pct=Math.round(((i+1)/files.length)*100);
     progressBar.style.width=pct+'%';
   }
@@ -410,7 +328,6 @@ bulkUploadBtn.addEventListener('click',async ()=>{
   setTimeout(()=>{bulkUploadBtn.disabled=false;bulkUploadBtn.textContent='Upload Selected';},1800);
 });
 
-/* Prevent default page scroll on space when focusing buttons */
 document.addEventListener('keydown',e=>{
   if(e.code==='Space' && document.activeElement.tagName==='BUTTON'){e.preventDefault();}
 });
